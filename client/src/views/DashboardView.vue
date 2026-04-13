@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useFolderStore } from '../stores/folder.store';
+import { useDocumentStore } from '../stores/document.stores';
 import { useRouter } from 'vue-router';
 import { api } from '../services/api';
 
 const router = useRouter();
 
-// Inizializziamo lo store
 const folderStore = useFolderStore();
 
-// Variabile reattiva (v-model) per l'input testuale
+const documentStore = useDocumentStore();
+
 const newFolderName = ref('');
 
+/*
 const handleCreateDocument = async () => {
   try {
     const response = await api.post('/documents', { title: 'Nuovo Documento' });
@@ -22,14 +24,24 @@ const handleCreateDocument = async () => {
     console.error("Errore creazione documento", error);
   }
 };
+*/
+
+const handleCreateDocument = async () => {
+  await documentStore.createDocument('Nuovo Documento');
+};
+
+const handleDeleteDocument = async (documentId: string) => {
+  await documentStore.deleteDocument(documentId);
+};
 
 // Hook del ciclo di vita: Appena il componente viene montato, chiama le API
 onMounted(() => {
   folderStore.fetchFolders();
+  documentStore.fetchDocuments();
 });
 
 // Funzione chiamata dal bottone
-const handleCreate = async () => {
+const handleCreateFolder = async () => {
   if (newFolderName.value.trim() === '') return;
   await folderStore.createFolder(newFolderName.value);
   newFolderName.value = ''; // Svuota l'input dopo la creazione
@@ -49,9 +61,9 @@ const handleDelete = async (folderId: string) => {
         v-model="newFolderName" 
         type="text" 
         placeholder="Nome nuova cartella..." 
-        @keyup.enter="handleCreate"
+        @keyup.enter="handleCreateFolder"
       />
-      <button @click="handleCreate" :disabled="!newFolderName">
+      <button @click="handleCreateFolder" :disabled="!newFolderName">
         + Crea Cartella
       </button>
       <button @click="handleCreateDocument" style="background-color: #1a73e8;">
@@ -61,33 +73,26 @@ const handleDelete = async (folderId: string) => {
 
     <hr />
 
-    <div v-if="folderStore.folders.length === 0" class="empty-state">
-      La tua area di lavoro è vuota. Crea una cartella per iniziare!
+    <div v-if="folderStore.folders.length === 0 && documentStore.documents.length === 0" class="empty-state">
+      La tua area di lavoro è vuota. Crea una cartella o un documento per iniziare!
     </div>
 
     <div v-else class="grid">
       <div v-for="folder in folderStore.folders" :key="folder._id" class="folder-card">
         <span class="folder-icon">🗂️</span>
         <span class="folder-name">{{ folder.name }}</span>
-        <button @click="handleDelete(folder._id)">Elimina</button>
+        <button @click.stop="handleDelete(folder._id)">Elimina</button>
       </div>
-    </div>
-    <div v-if="folderStore.folders.length === 0" class="empty-state">
-      La tua area di lavoro è vuota. Crea una cartella per iniziare!
-    </div>
-
-    <div v-else class="grid">
-      <div v-for="folder in folderStore.folders" :key="folder._id" class="folder-card">
-        <span class="folder-icon">🗂️</span>
-        <span class="folder-name">{{ folder.name }}</span>
-        <button @click="handleDelete(folder._id)">Elimina</button>
+      <div v-for="document in documentStore.documents" :key="document._id" class="document-card" @click="router.push(`/document/${document._id}`)">
+        <span class="document-icon">📄</span>
+        <span class="document-name">{{ document.title }}</span>
+        <button @click.stop="handleDeleteDocument(document._id)">Elimina</button>
       </div>
     </div>
   </main>
 </template>
 
 <style scoped>
-/* Stili CSS base per avere un aspetto pulito e Mobile First */
 .drive-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -107,13 +112,13 @@ const handleDelete = async (folderId: string) => {
   font-size: 1rem;
   border: 1px solid #ccc;
   border-radius: 6px;
-  flex: 1; /* Su mobile prenderà tutto lo spazio */
+  flex: 1;
   max-width: 300px;
 }
 
 .toolbar button {
   padding: 0.8rem 1.5rem;
-  background-color: #0b57d0; /* Blu stile Google */
+  background-color: #0b57d0;
   color: white;
   border: none;
   border-radius: 6px;
@@ -143,11 +148,30 @@ const handleDelete = async (folderId: string) => {
   transition: background-color 0.2s;
 }
 
+.document-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 1rem;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
 .folder-card:hover {
   background-color: #f8f9fa;
 }
 
+.document-card:hover {
+  background-color: #f8f9fa;
+}
+
 .folder-icon {
+  font-size: 1.5rem;
+}
+
+.document-icon {
   font-size: 1.5rem;
 }
 
