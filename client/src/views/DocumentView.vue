@@ -40,7 +40,7 @@ onMounted(async () => {
 
     <Editor 
       v-else-if="documentData" 
-      :initialContent="documentData.tiptapJson" 
+      :documentId="documentId"
     />
   </div>
 </template>

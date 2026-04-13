@@ -5,7 +5,6 @@ export const createDoc = async (req: Request, res: Response) => {
     try {
         const { title, folderId } = req.body;
         const doc = await DocumentService.createDocument(title || 'Documento Senza Titolo', folderId);
-        console.log(doc)
         res.status(201).json(doc);
     } catch (error) {
         res.status(500).json({ error: 'Errore creazione documento' });
@@ -28,7 +27,6 @@ export const getDoc = async (req: Request, res: Response) => {
 export const getAllDocuments = async (req: Request, res: Response) => {
     try {
         const docs = await DocumentService.getAllDocuments();
-        console.log(docs);
         if (!docs) {
             res.status(404).json({ error: 'Nessun documento trovato' });
             return;
@@ -42,7 +40,6 @@ export const getAllDocuments = async (req: Request, res: Response) => {
 export const deleteDocument = async (req: Request, res: Response) => {
     try {
         const documentId = req.params.id as string
-        console.log("documentId da eliminare:", documentId)
         const doc = await DocumentService.deleteDocument(documentId)
         res.status(200).json(doc)
     } catch (error) {

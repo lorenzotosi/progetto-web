@@ -1,33 +1,64 @@
 <script setup lang="ts">
+import { onBeforeUnmount } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
-import { onBeforeUnmount } from 'vue';
+import Collaboration from '@tiptap/extension-collaboration';
+import * as Y from 'yjs';
+import { io } from 'socket.io-client';
 
-// Definiamo le props che il componente padre ci passerà
 const props = defineProps<{
-  initialContent: Record<string, any>; // Il JSON del documento
+  documentId: string;
 }>();
 
-// Inizializziamo Tiptap
+const ydoc = new Y.Doc();
+const socket = io('http://localhost:3000');
+
+socket.emit('join-document', props.documentId);
+
+  socket.on('sync-document', (fullState: ArrayBuffer) => {
+    Y.applyUpdate(ydoc, new Uint8Array(fullState));
+  });
+
+
+ydoc.on('update', (update: Uint8Array) => {
+  socket.emit('crdt-update', { 
+    documentId: props.documentId, 
+    update 
+  });
+});
+
+socket.on('crdt-update', (update: ArrayBuffer) => {
+  Y.applyUpdate(ydoc, new Uint8Array(update));
+});
+
 const editor = useEditor({
-  content: props.initialContent,
   extensions: [
-    StarterKit, // Abilita grassetto, corsivo, liste, etc.
+    StarterKit.configure({
+      history: false,
+    } as any),
     TextAlign.configure({
       types: ['heading', 'paragraph'],
+    }),
+    Collaboration.configure({
+      document: ydoc,
     }),
   ],
   editorProps: {
     attributes: {
-      class: 'prose focus:outline-none', // Classe base per lo stile
+      class: 'prose focus:outline-none',
     },
   },
 });
 
-// Pulizia della memoria quando cambiamo pagina
 onBeforeUnmount(() => {
-  editor.value?.destroy();
+  if (socket) {
+    socket.emit('leave-document', props.documentId);
+    socket.disconnect();
+  }
+  if (ydoc) {
+    ydoc.destroy();
+  }
 });
 </script>
 
