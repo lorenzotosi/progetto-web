@@ -13,6 +13,7 @@ import { Awareness } from 'y-protocols/awareness';
 import * as awarenessProtocol from 'y-protocols/awareness';
 import CollaborationCaret from '@tiptap/extension-collaboration-caret';
 import { Color } from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
 import { ref } from 'vue';
 
 const props = defineProps<{
@@ -74,6 +75,18 @@ const applyColor = (color: HexColor) => {
   }
   showColorPalette.value = false; // Nascondi la palette dopo la selezione
 };
+
+const showHighlightPalette = ref<boolean>(false);
+const applyHighlight = (color: HexColor) => {
+  if (editor.value) {
+    if (!color) {
+      editor.value.chain().focus().unsetHighlight().run();
+    } else {
+      editor.value.chain().focus().setHighlight({ color }).run();
+    }
+  }
+  showHighlightPalette.value = false;
+};
 // Fine palette colori
 
 const editor = useEditor({
@@ -99,6 +112,7 @@ const editor = useEditor({
     TextStyle,
     FontSize,
     FontFamily,
+    Highlight.configure({ multicolor: true }),
     Color.configure({ types: ['textStyle'] }),
   ],
   editorProps: {
@@ -165,8 +179,9 @@ onBeforeUnmount(() => {
       <button @click="editor.chain().focus().toggleUnderline().run()" :class="{ 'is-active': editor.isActive('underline') }" title="Sottolineato">
         <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M12 17c3.31 0 6-2.69 6-6V3h-2.5v8c0 1.93-1.57 3.5-3.5 3.5S8.5 12.93 8.5 11V3H6v8c0 3.31 2.69 6 6 6zm-7 2v2h14v-2H5z"/></svg>
       </button>
+      <div class="divider"></div>
       <button 
-        @click="showColorPalette = !showColorPalette" 
+        @click="showColorPalette = !showColorPalette; showHighlightPalette = false" 
         :class="{ 'is-active': showColorPalette }"
         title="Colore testo"
       >
@@ -175,6 +190,18 @@ onBeforeUnmount(() => {
           :style="{ borderBottomColor: editor?.getAttributes('textStyle').color || '#000000' }"
         >
           A
+        </span>
+      </button>
+      <button 
+        @click="showHighlightPalette = !showHighlightPalette; showColorPalette = false" 
+        :class="{ 'is-active': showHighlightPalette }"
+        title="Colore evidenziatore"
+      >
+        <span 
+          class="color-indicator" 
+          :style="{ borderBottomColor: editor?.getAttributes('highlight').color || 'transparent' }"
+        >
+          <svg width="18" height="18" viewBox="0 -960 960 960"><path fill="currentColor" d="M544-400 440-504 240-304l104 104 200-200Zm-47-161 104 104 199-199-104-104-199 199Zm-84-28 216 216-229 229q-24 24-56 24t-56-24l-2-2-26 26H60l126-126-2-2q-24-24-24-56t24-56l229-229Zm0 0 227-227q24-24 56-24t56 24l104 104q24 24 24 56t-24 56L629-373 413-589Z"/></svg>
         </span>
       </button>
       <div class="divider"></div>
@@ -205,10 +232,21 @@ onBeforeUnmount(() => {
     <div v-if="showColorPalette" class="color-palette-bar">
       <button
         v-for="color in predefinedColors"
-        :key="color"
+        :key="'text-'+color"
         class="color-swatch"
         :style="{ backgroundColor: color }"
         @click="applyColor(color)"
+      ></button>
+    </div>
+
+    <div v-if="showHighlightPalette" class="color-palette-bar">
+      <button class="color-swatch" style="background-color: transparent; border: 1px dashed #ccc;" title="Nessun colore" @click="applyHighlight('')"></button>
+      <button
+        v-for="color in predefinedColors"
+        :key="'bg-'+color"
+        class="color-swatch"
+        :style="{ backgroundColor: color }"
+        @click="applyHighlight(color)"
       ></button>
     </div>
 
