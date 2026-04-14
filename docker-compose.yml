@@ -1,0 +1,35 @@
+services:
+  # Il nostro Load Balancer
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80" # Esponiamo la porta 80 al tuo browser
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend1
+      - backend2
+
+  # Il Primo "Server"
+  backend1:
+    build: ./server # Punta alla tua cartella server con il Dockerfile
+    environment:
+      - PORT=3000
+      - MONGO_URI=mongodb://mongo:27017/dok
+    depends_on:
+      - mongo
+
+  # Il Secondo "Server"
+  backend2:
+    build: ./server
+    environment:
+      - PORT=3000
+      - MONGO_URI=mongodb://mongo:27017/dok
+    depends_on:
+      - mongo
+
+  # Il Database Unico Condiviso
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
