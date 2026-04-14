@@ -1,87 +1,111 @@
 import { Server, Socket } from 'socket.io';
 import * as Y from 'yjs';
-import Document from '../models/Document.js'; // Il nostro modello Mongoose
+import Document from '../models/Document.js';
+import { activeDocuments } from './sync.types.js';
+import { TiptapTransformer } from '@hocuspocus/transformer';
 
-// PATTERN: In-Memory Cache
-// Manteniamo i documenti attivi in RAM per non interrogare MongoDB ad ogni lettera digitata
-const activeDocuments = new Map<string, Y.Doc>();
+const handleClientLeave = async (documentId: string) => {
+  const state = activeDocuments.get(documentId);
+  if (!state) return;
 
-// Manteniamo traccia dei timer di salvataggio per il Debouncing
-const saveTimers = new Map<string, NodeJS.Timeout>();
+  state.clientsCount -= 1;
+
+  if (state.clientsCount <= 0) {
+    console.log(`[GC] Nessun client in ${documentId}. Pulizia memoria...`);
+    if (state.saveTimeout) clearTimeout(state.saveTimeout);
+
+    try {
+      const finalBinaryState = Y.encodeStateAsUpdate(state.ydoc);
+      const tiptapJson = TiptapTransformer.fromYdoc(state.ydoc, 'default' /*, [StarterKit] */);
+      await Document.findByIdAndUpdate(documentId, { 
+        yjsState: Buffer.from(finalBinaryState),
+        tiptapJson: tiptapJson
+      });
+      console.log(`[DB] Stato finale di ${documentId} salvato.`);
+    } catch (error) {
+      console.error(`[DB Errore] Salvataggio fallito per ${documentId}:`, error);
+    }
+
+    state.ydoc.destroy();
+    activeDocuments.delete(documentId);
+  }
+};
 
 export const setupSockets = (io: Server) => {
   io.on('connection', (socket: Socket) => {
     console.log(`🟢 Nuovo client connesso: ${socket.id}`);
-
-    // 1. IL CLIENT ENTRA NELLA STANZA
+    
     socket.on('join-document', async (documentId: string) => {
       socket.join(documentId);
-      
-      // Controlliamo se il documento è già "sveglio" nella RAM del server
-      let ydoc = activeDocuments.get(documentId);
 
-      // Se non è in RAM, lo carichiamo da MongoDB
-      if (!ydoc) {
-        ydoc = new Y.Doc();
-        try {
-          const dbDoc = await Document.findById(documentId);
-          // Se nel DB c'è uno stato binario precedente, lo applichiamo al nostro Y.Doc
-          if (dbDoc && dbDoc.yjsState && dbDoc.yjsState.length > 0) {
-            Y.applyUpdate(ydoc, new Uint8Array(dbDoc.yjsState));
-          }
-          activeDocuments.set(documentId, ydoc);
-          console.log(`📄 Documento ${documentId} caricato in RAM.`);
-        } catch (error) {
-          console.error("Errore nel caricamento del documento dal DB:", error);
+      if (!activeDocuments.has(documentId)) {
+        const dbDoc = await Document.findById(documentId);
+
+        if (!dbDoc) {
+          socket.emit('error', { message: 'Documento non trovato' });
+          return;
         }
+
+        const ydoc = new Y.Doc();
+        
+        if (dbDoc && dbDoc.yjsState && dbDoc.yjsState.length > 0) {
+          Y.applyUpdate(ydoc, new Uint8Array(dbDoc.yjsState));
+        }
+
+        activeDocuments.set(documentId, {
+          ydoc,
+          clientsCount: 1,
+          saveTimeout: null
+        });
+        console.log(`📄 Documento ${documentId} caricato in RAM.`);
+      } else {
+        const state = activeDocuments.get(documentId)!;
+        state.clientsCount += 1;
       }
 
-      // STATE SYNC: Inviamo tutto il documento aggiornato al client appena arrivato!
-      // Questo risolve il problema della pagina vuota.
-      const stateVector = Y.encodeStateAsUpdate(ydoc);
-      socket.emit('sync-document', stateVector);
+      const state = activeDocuments.get(documentId)!;
+      socket.emit('sync-document', Y.encodeStateAsUpdate(state.ydoc));
     });
 
-    // 2. IL CLIENT INVIA UNA MODIFICA (CRDT)
-    socket.on('crdt-update', ({ documentId, update }: { documentId: string, update: ArrayBuffer }) => {
-      // A. Broadcaster: Inoltriamo istantaneamente agli altri per la bassa latenza
-      socket.broadcast.to(documentId).emit('crdt-update', update);
+    socket.on('crdt-update', ({ documentId, update }: { documentId: string, update: Uint8Array }) => {
+      const state = activeDocuments.get(documentId);
+      if (!state) return;
 
-      // B. Aggiorniamo la RAM del server
-      const ydoc = activeDocuments.get(documentId);
-      if (ydoc) {
-        Y.applyUpdate(ydoc, new Uint8Array(update));
+      Y.applyUpdate(state.ydoc, new Uint8Array(update));
+      socket.to(documentId).emit('crdt-update', update);
 
-        // C. PATTERN: Debouncing (Write-Behind Cache)
-        // Cancelliamo il salvataggio precedente se l'utente sta ancora scrivendo
-        clearTimeout(saveTimers.get(documentId));
-        
-        // Impostiamo un nuovo timer di 3 secondi (3000ms)
-        const timer = setTimeout(async () => {
-          try {
-            const binaryState = Y.encodeStateAsUpdate(ydoc);
-            // Salviamo lo stato binario su MongoDB
-            await Document.findByIdAndUpdate(documentId, {
-              yjsState: Buffer.from(binaryState)
-            });
-            console.log(`💾 Documento ${documentId} persistito su DB dopo inattività.`);
-          } catch (error) {
-            console.error("Errore salvataggio DB:", error);
-          }
-        }, 3000);
-        
-        saveTimers.set(documentId, timer);
-      }
+      if (state.saveTimeout) clearTimeout(state.saveTimeout);
+      
+      state.saveTimeout = setTimeout(async () => {
+        try {
+          const binaryState = Y.encodeStateAsUpdate(state.ydoc);
+          const tiptapJson = TiptapTransformer.fromYdoc(state.ydoc, 'default');
+          await Document.findByIdAndUpdate(documentId, { 
+            yjsState: Buffer.from(binaryState),
+            tiptapJson: tiptapJson
+          });
+          console.log(`💾 Documento ${documentId} persistito su DB dopo inattività.`);
+        } catch (error) {
+          console.error("Errore salvataggio debounced:", error);
+        }
+      }, 3000); 
     });
 
-    // 3. AWARENESS SYNC (MULTI-CURSORI)
-    socket.on('awareness-update', ({ documentId, update }: { documentId: string, update: ArrayBuffer }) => {
-      socket.broadcast.to(documentId).emit('awareness-update', update);
+    //multi cursor
+    socket.on('awareness-update', ({ documentId, update }: { documentId: string, update: any }) => {
+      socket.to(documentId).emit('awareness-update', update);
     });
 
-    // 4. IL CLIENT ESCE DALLA STANZA
-    socket.on('leave-document', (documentId: string) => {
+    socket.on('leave-document', async (documentId: string) => {
       socket.leave(documentId);
+      await handleClientLeave(documentId);
+    });
+
+    socket.on('disconnecting', async () => {
+      const rooms = Array.from(socket.rooms).filter(r => r !== socket.id);
+      for (const documentId of rooms) {
+        await handleClientLeave(documentId);
+      }
     });
 
     socket.on('disconnect', () => {
