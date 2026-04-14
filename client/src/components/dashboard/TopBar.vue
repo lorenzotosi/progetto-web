@@ -18,7 +18,6 @@ const searchQuery = ref('');
       </div>
     </div>
     <div class="actions">
-      <button class="icon-btn" title="Supporto">?</button>
       <button class="icon-btn" title="Impostazioni">⚙️</button>
       <div class="avatar" title="Account Google fittizio">U</div>
     </div>

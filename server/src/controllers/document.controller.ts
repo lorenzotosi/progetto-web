@@ -4,7 +4,6 @@ import { DocumentService } from '../services/document.service.js';
 export const createDoc = async (req: Request, res: Response) => {
     try {
         const { title, folderId } = req.body;
-        console.log(title, folderId);
         const doc = await DocumentService.createDocument(title || 'Documento Senza Titolo', folderId);
         res.status(201).json(doc);
     } catch (error) {

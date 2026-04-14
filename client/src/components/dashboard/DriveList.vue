@@ -12,6 +12,14 @@ const emit = defineEmits<{
   (e: 'delete-folder', id: string): void;
   (e: 'delete-document', id: string): void;
 }>();
+const formatDate = (dateString?: string) => {
+  if (!dateString) return '---';
+  return new Intl.DateTimeFormat('it-IT', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }).format(new Date(dateString));
+};
 </script>
 
 <template>
@@ -32,7 +40,7 @@ const emit = defineEmits<{
             <span class="name">{{ folder.name }}</span>
           </div>
           <div class="col-owner">io</div>
-          <div class="col-date">Oggi</div> <!-- Dati fittizi -->
+          <div class="col-date">{{ formatDate(folder.updatedAt) }}</div>
           <div class="col-actions">
             <button class="icon-btn delete-btn" @click.stop="emit('delete-folder', folder._id)" title="Elimina cartella">🗑️</button>
           </div>
@@ -52,7 +60,7 @@ const emit = defineEmits<{
             <span class="name">{{ document.title }}</span>
           </div>
           <div class="col-owner">io</div>
-          <div class="col-date">Oggi</div> <!-- Dati fittizi -->
+          <div class="col-date">{{ formatDate(document.updatedAt) }}</div>
           <div class="col-actions">
              <button class="icon-btn delete-btn" @click.stop="emit('delete-document', document._id)" title="Elimina documento">🗑️</button>
           </div>
