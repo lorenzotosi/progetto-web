@@ -5,7 +5,7 @@ import connectDB from './config/db.js';
 import { setupSockets } from './sockets/index.js';
 import { app } from './app.js'; // Importiamo l'app pulita
 
-const PORT = process.env.PORT || 80;
+const PORT = process.env.PORT || 3000;
 
 //connessione al database
 connectDB();

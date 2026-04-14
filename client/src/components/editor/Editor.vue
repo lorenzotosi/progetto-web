@@ -17,7 +17,7 @@ import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import { useAuthStore } from '../../stores/auth.store.js';
 
-const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost';
+const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
 
 const props = defineProps<{
   documentId: string;
