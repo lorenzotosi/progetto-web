@@ -26,7 +26,7 @@ export const useDocumentStore = defineStore('document', () => {
 
     const createDocument = async (name: string, parentId: string | null = null) => {
         try {
-            await api.post('/documents', { name, parentId });
+            await api.post('/documents', { title: name, folderId: parentId });
             await fetchDocuments(parentId);
         } catch (error) {
             console.error('Errore nella creazione', error);
