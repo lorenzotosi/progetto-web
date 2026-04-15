@@ -9,6 +9,7 @@ import MainWorkspace from '../components/dashboard/MainWorkspace.vue';
 const folderStore = useFolderStore();
 const documentStore = useDocumentStore();
 const currentSection = ref<'private' | 'public'>('private');
+const searchQuery = ref('');
 
 onMounted(() => {
   folderStore.fetchFolders();
@@ -36,19 +37,25 @@ const handleDeleteDocument = async (id: string) => {
 };
 
 const filteredDocuments = computed(() => {
-  return documentStore.documents.filter(doc => doc.visibility === currentSection.value);
+  return documentStore.documents.filter(doc => {
+    const matchesVisibility = doc.visibility === currentSection.value;
+    const matchesSearch = doc.title.toLowerCase().includes(searchQuery.value.toLowerCase());
+    return matchesVisibility && matchesSearch;
+  });
 });
 
 // TODO: implementare cartelle globali, stessa logica sopra!
 const filteredFolders = computed(() => {
-  if (currentSection.value === 'public') return [];
-  return folderStore.folders;
+  const folders = currentSection.value === 'public' ? [] : folderStore.folders;
+  return folders.filter(folder => 
+    folder.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
 });
 </script>
 
 <template>
   <div class="dashboard-layout">
-    <TopBar />
+    <TopBar @search="val => searchQuery = val"/>
     <div class="dashboard-body">
       <SideBar 
         @create-document="handleCreateDocument"
