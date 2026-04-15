@@ -1,5 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useAuthStore } from '../../stores/auth.store';
+import AuthModal from '../auth/AuthModal.vue';
+
+const authStore = useAuthStore();
+const isModalOpen = ref(false);
+
+const handleLogout = () => {
+  if(confirm("Vuoi uscire?")) authStore.logout();
+};
 
 const emit = defineEmits<{
   (e: 'search', query: string): void;
@@ -33,8 +42,18 @@ const handleSearch = () => {
     </div>
     <div class="actions">
       <button class="icon-btn" title="Impostazioni">⚙️</button>
-      <div class="avatar" title="Account Google fittizio">U</div>
     </div>
+    <div class="user-section">
+      <div v-if="authStore.isAuthenticated()" class="avatar" @click="handleLogout">
+        <img src="/icons.svg#user" alt="User" />
+      </div>
+      <button v-else class="login-trigger" @click="isModalOpen = true">
+        Accedi
+      </button>
+    </div>
+
+    <AuthModal :is-open="isModalOpen" @close="isModalOpen = false" />
+
   </header>
 </template>
 
@@ -147,4 +166,12 @@ const handleSearch = () => {
   cursor: pointer;
   margin-left: 12px;
 }
+
+.login-trigger {
+  background: #4f46e5; color: white; border: none;
+  padding: 0.5rem 1.2rem; border-radius: 20px;
+  font-weight: 500; cursor: pointer; transition: 0.2s;
+}
+
+.login-trigger:hover { background: #4338ca; }
 </style>

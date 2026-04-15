@@ -19,7 +19,7 @@ export class AuthService {
 
     private generateToken(user: IUser): string {
         return jwt.sign(
-            { id: user._id, role: user.role }, // Payload: essenziale e piccolo
+            { id: user._id, role: user.role },
             this.JWT_SECRET,
             { expiresIn: this.JWT_EXPIRES_IN }
         );
@@ -29,7 +29,7 @@ export class AuthService {
         // Forza il ruolo a USER per evitare privilegi non autorizzati
         const user = new UserModel({
             ...data,
-            passwordHash: data.password, // Il pre-save hook farà l'hashing
+            passwordHash: data.password, // Il pre-save hook fa l'hashing
             role: UserRole.USER
         });
 
@@ -50,7 +50,6 @@ export class AuthService {
     }
 
     async login(email: string, password: string): Promise<AuthResponse> {
-        // Essendo select: false, dobbiamo richiederlo esplicitamente
         const user = await UserModel.findOne({ email }).select('+passwordHash');
 
         if (!user) {

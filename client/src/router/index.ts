@@ -7,7 +7,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: DashboardView },
-    { path: '/document/:id', component: DocumentView } // Rotta dinamica
+    { path: '/document/:id', component: DocumentView }
   ]
 });
 
@@ -15,9 +15,9 @@ router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore();
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated()) {
-    next('/login'); // Reindirizza se cerca di andare in Dashboard senza login
+    next('/');
   } else {
-    next(); // Lascia passare alla home pubblica o se è loggato
+    next();
   }
 });
 
