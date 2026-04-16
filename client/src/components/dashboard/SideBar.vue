@@ -87,7 +87,10 @@ const handleCreateFolder = () => {
     <nav class="nav-list">
       <div 
         class="nav-item" 
-        :class="{ 'is-active': activeSection === 'private' }"
+        :class="{ 
+          'is-active': activeSection === 'private',
+          'is-disabled': !authStore.isAuthenticated()
+         }"
         @click="setSection('private')"
       >
         <span class="icon">🏠</span>
