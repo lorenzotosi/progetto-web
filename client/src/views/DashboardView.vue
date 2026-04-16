@@ -1,16 +1,31 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref, computed, watch } from 'vue';
 import { useFolderStore } from '../stores/folder.store';
 import { useDocumentStore } from '../stores/document.stores';
+import { useAuthStore } from '../stores/auth.store';
 import TopBar from '../components/dashboard/TopBar.vue';
 import SideBar from '../components/dashboard/SideBar.vue';
 import MainWorkspace from '../components/dashboard/MainWorkspace.vue';
 
 const folderStore = useFolderStore();
 const documentStore = useDocumentStore();
+const authStore = useAuthStore();
 const currentSection = ref<'private' | 'public'>('private');
 const currentFolderId = ref<string | null>(null);
 const searchQuery = ref('');
+
+// Watcher per refresh automatico al login/logout
+watch(() => authStore.token, (newToken) => {
+  if (newToken) {
+    // Al login, vai in automatico su private
+    handleSectionChange('private');
+  } else if (!newToken && currentSection.value === 'private') {
+    // Al logout, se l'utente è in private, lo spostiamo in public
+    handleSectionChange('public');
+  } else {
+    refreshData();
+  }
+});
 
 // Stack dei folder per tornare indietro (con nome per il titolo)
 const folderStack = ref<{id: string | null, name: string}[]>([
@@ -18,7 +33,11 @@ const folderStack = ref<{id: string | null, name: string}[]>([
 ]);
 
 onMounted(() => {
-  refreshData();
+  if (!authStore.token) {
+    handleSectionChange('public');
+  } else {
+    refreshData();
+  }
 });
 
 const refreshData = () => {
@@ -96,6 +115,7 @@ const currentTitle = computed(() => {
     <TopBar @search="val => searchQuery = val"/>
     <div class="dashboard-body">
       <SideBar 
+        :active-section="currentSection"
         @create-document="handleCreateDocument"
         @create-folder="handleCreateFolder"
         @section-change="handleSectionChange"

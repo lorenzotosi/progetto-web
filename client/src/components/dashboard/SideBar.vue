@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+const props = defineProps<{
+  activeSection: 'private' | 'public';
+}>();
+
 const emit = defineEmits<{
   (e: 'create-document', name: string): void;
   (e: 'create-folder', name: string): void;
   (e: 'section-change', section: 'private' | 'public'): void;
 }>();
 
-const activeSection = ref<'private' | 'public'>('private');
-
 const setSection = (section: 'private' | 'public') => {
-  activeSection.value = section;
   emit('section-change', section);
 };
 
