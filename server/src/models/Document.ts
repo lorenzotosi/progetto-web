@@ -1,10 +1,16 @@
 import mongoose, { Schema, type Document as MongooseDocument } from 'mongoose';
 
+export interface ISharedUser {
+  userId: mongoose.Types.ObjectId;
+  role: 'viewer' | 'editor';
+}
+
 export interface IDocument extends MongooseDocument {
   title: string;
   ownerId: mongoose.Types.ObjectId;
   folderId: mongoose.Types.ObjectId | null;
   visibility: 'private' | 'public';
+  sharedWith: ISharedUser[];
   yjsState: Buffer;
   tiptapJson: Record<string, any>;
 }
@@ -14,6 +20,10 @@ const DocumentSchema: Schema = new Schema({
   folderId: { type: Schema.Types.ObjectId, ref: 'Folder', default: null },
   ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   visibility: { type: String, enum: ['private', 'public'], default: 'private' },
+  sharedWith: [{
+    userId: { type: Schema.Types.ObjectId, ref: 'User' },
+    role: { type: String, enum: ['viewer', 'editor'] }
+  }],
   yjsState: { type: Buffer, default: Buffer.from('') },
   tiptapJson: { type: Schema.Types.Mixed, default: {} }
 }, {
