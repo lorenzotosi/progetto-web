@@ -15,7 +15,13 @@ export const createDoc = async (req: AuthRequest, res: Response) => {
 
 export const getDoc = async (req: AuthRequest, res: Response) => {
     try {
-        const doc = await DocumentService.getDocumentById(req.params.id as string);
+        const userId = req.user?.id || null;
+        let doc;
+        if (!userId) {
+            doc = await DocumentService.getPublicDocumentById(req.params.id as string);
+        } else {
+            doc = await DocumentService.getPrivateDocumentById(req.params.id as string, userId);
+        }
         if (!doc) {
             res.status(404).json({ error: 'Documento non trovato' });
             return;

@@ -17,6 +17,14 @@ export class DocumentService {
         return await Document.findById(id);
     }
 
+    static async getPrivateDocumentById(id: string, ownerId: string) {
+        return await Document.findOne({ _id: id, ownerId });
+    }
+
+    static async getPublicDocumentById(id: string) {
+        return await Document.findOne({ _id: id, visibility: 'public' });
+    }
+
     static async getAllDocuments(ownerId: string | null, folderId: string | null = null) {
         if (!ownerId) {
             return await Document.find({ visibility: 'public', folderId }).sort({ createdAt: -1 });
