@@ -75,7 +75,6 @@ const handleAuthAction = async (payload: LoginPayload | RegisterPayload) => {
 </template>
 
 <style scoped>
-/* Animazione fluida (UX enhancement) */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s ease, transform 0.2s ease;
