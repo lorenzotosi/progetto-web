@@ -57,7 +57,7 @@ const handleAuthAction = async (payload: LoginPayload | RegisterPayload) => {
       );
     }
 
-    authStore.setToken(data.token);
+    authStore.setAuthData(data.token, data.user);
     emit('close');
   } catch (err: any) {
     serverError.value = err?.response?.data?.error || "Errore di connessione";

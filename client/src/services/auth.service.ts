@@ -1,12 +1,9 @@
 import { api } from './api';
+import type {User} from "../types/user.types.ts";
 
 export interface AuthResponse {
     token: string;
-    user: {
-        id: string;
-        email: string;
-        role?: string;
-    };
+    user: User
 }
 
 export const AuthClientService = {
