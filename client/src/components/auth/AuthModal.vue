@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { AuthClientService } from '../../services/auth.service';
 import { useAuthStore } from '../../stores/auth.store';
 import BaseModal from '../common/BaseModal.vue';
@@ -7,7 +7,7 @@ import LoginForm from './LoginForm.vue';
 import RegisterForm from "./RegisterForm.vue";
 import type { LoginPayload, RegisterPayload } from '../../types/auth.types';
 
-defineProps<{ isOpen: boolean }>();
+const props = defineProps<{ isOpen: boolean }>();
 const emit = defineEmits(['close']);
 
 const authStore = useAuthStore();
@@ -17,9 +17,26 @@ const serverError = ref('');
 
 const modalTitle = computed(() => isLoginView.value ? 'Accedi a Dok' : 'Crea un Account');
 
+watch(() => props.isOpen, (newVal) => {
+  if (!newVal) {
+    resetModalState();
+  }
+})
+
+const resetModalState = () => {
+  serverError.value = '';
+  isLoading.value = false;
+  isLoginView.value = true;
+};
+
 const toggleView = () => {
   isLoginView.value = !isLoginView.value;
   serverError.value = '';
+};
+
+const handleClose = () => {
+  serverError.value = '';
+  emit('close');
 };
 
 const handleAuthAction = async (payload: LoginPayload | RegisterPayload) => {
@@ -54,7 +71,7 @@ const handleAuthAction = async (payload: LoginPayload | RegisterPayload) => {
   <BaseModal
       :is-open="isOpen"
       :title="modalTitle"
-      @close="$emit('close')"
+      @close="handleClose"
   >
     <transition name="fade" mode="out-in">
       <LoginForm
