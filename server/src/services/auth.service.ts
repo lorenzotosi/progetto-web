@@ -18,15 +18,21 @@ export class AuthService {
     private readonly JWT_EXPIRES_IN = '1d';
 
     private generateToken(user: IUser): string {
+        if (!this.JWT_SECRET) {
+            throw new Error("Configurazione server errata: JWT_SECRET mancante.");
+        }
+        const payload = {
+            id: user._id.toString(),
+            role: user.role
+        };
         return jwt.sign(
-            { id: user._id, role: user.role },
+            payload,
             this.JWT_SECRET,
-            { expiresIn: this.JWT_EXPIRES_IN }
+            { expiresIn: this.JWT_EXPIRES_IN, algorithm: 'HS256' }
         );
     }
 
     async register(data: any): Promise<AuthResponse> {
-        // Forza il ruolo a USER per evitare privilegi non autorizzati
         const user = new UserModel({
             ...data,
             passwordHash: data.password, // Il pre-save hook fa l'hashing
