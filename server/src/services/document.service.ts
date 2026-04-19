@@ -33,14 +33,18 @@ export class DocumentService {
 
     static async getAllDocuments(ownerId: string | null, folderId: string | null = null) {
         if (!ownerId) {
-            return await Document.find({ visibility: 'public', folderId }).sort({ createdAt: -1 });
+            return await Document.find({ visibility: 'public', folderId })
+                .populate('ownerId', 'firstName lastName')
+                .sort({ createdAt: -1 });
         }
         return await Document.find({ 
             $or: [
                 { ownerId, folderId },
                 { visibility: 'public', folderId }
             ]
-        }).sort({ createdAt: -1 });
+        })
+        .populate('ownerId', 'firstName lastName')
+        .sort({ createdAt: -1 });
     }
 
     static async deleteDocument(id: string) {

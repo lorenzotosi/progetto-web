@@ -8,6 +8,7 @@ defineProps<{
   folders: any[];
   documents: any[];
   showBack?: boolean;
+  isPublic?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -62,6 +63,7 @@ const isGridView = ref(true);
         v-if="isGridView"
         :folders="folders"
         :documents="documents"
+        :is-public="isPublic"
         @delete-folder="id => emit('delete-folder', id)"
         @delete-document="id => emit('delete-document', id)"
         @enter-folder="id => emit('enter-folder', id)"
@@ -70,6 +72,7 @@ const isGridView = ref(true);
         v-else
         :folders="folders"
         :documents="documents"
+        :is-public="isPublic"
         @delete-folder="id => emit('delete-folder', id)"
         @delete-document="id => emit('delete-document', id)"
         @enter-folder="id => emit('enter-folder', id)"

@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 
-const router = useRouter();
+import { useAuthStore } from '../../stores/auth.store';
 
-defineProps<{
+const router = useRouter();
+const authStore = useAuthStore();
+
+const props = defineProps<{
   folders: any[];
   documents: any[];
+  isPublic?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -29,6 +33,7 @@ const emit = defineEmits<{
           <div class="card-content">
             <span class="icon">🗂️</span>
             <span class="name">{{ folder.name }}</span>
+            <span v-if="isPublic && (folder.ownerId._id || folder.ownerId) === authStore.user?.id" class="owner-tag">owner</span>
           </div>
           <button class="delete-btn" @click.stop="emit('delete-folder', folder._id)" title="Elimina cartella">🗑️</button>
         </div>
@@ -53,6 +58,7 @@ const emit = defineEmits<{
             <div class="doc-info">
               <span class="icon">📄</span>
               <span class="name">{{ document.title }}</span>
+              <span v-if="isPublic && (document.ownerId._id || document.ownerId) === authStore.user?.id" class="owner-tag">owner</span>
             </div>
             <button class="delete-btn" @click.stop="emit('delete-document', document._id)" title="Elimina documento">🗑️</button>
           </div>
@@ -165,6 +171,17 @@ const emit = defineEmits<{
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.owner-tag {
+  background-color: #e8f0fe;
+  color: #1967d2;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  margin-left: 4px;
 }
 
 .delete-btn {

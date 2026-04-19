@@ -125,6 +125,7 @@ const currentTitle = computed(() => {
         :show-back="currentFolderId !== null"
         :folders="filteredFolders"
         :documents="filteredDocuments"
+        :is-public="currentSection === 'public'"
         @delete-folder="handleDeleteFolder"
         @delete-document="handleDeleteDocument"
         @enter-folder="handleEnterFolder"
