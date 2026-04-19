@@ -18,7 +18,13 @@ export class DocumentService {
     }
 
     static async getPrivateDocumentById(id: string, ownerId: string) {
-        return await Document.findOne({ _id: id, ownerId });
+        return await Document.findOne({
+            _id: id,
+            $or: [
+                { visibility: 'public' },
+                { ownerId }
+            ]
+        });
     }
 
     static async getPublicDocumentById(id: string) {

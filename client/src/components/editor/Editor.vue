@@ -101,7 +101,7 @@ const editor = useEditor({
     CollaborationCaret.configure({
       provider: provider,
       user: {
-        name: authStore.user?.username || authStore.user?.email || 'Utente' + Math.random().toString(36).substring(2, 7),
+        name: authStore.user?.firstName + ' ' + authStore.user?.lastName || 'Utente' + Math.random().toString(36).substring(2, 7),
         color: getRandomColor(),
       },
     }),
