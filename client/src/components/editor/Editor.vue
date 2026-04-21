@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue';
+import { onBeforeUnmount, ref, computed, watch } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
@@ -21,7 +21,12 @@ const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
 
 const props = defineProps<{
   documentId: string;
+  ownerId: string;
+  sharedWith?: any[];
 }>();
+
+console.log(props)
+console.log(props.sharedWith)
 
 const authStore = useAuthStore();
 const ydoc = new Y.Doc();
@@ -88,9 +93,24 @@ awareness.on('update', ({ added, updated, removed }: any) => {
 
 defineExpose({ activeUsers });
 
+const canEdit = computed(() => {
+  if (!authStore.isAuthenticated()) return false;
+  if (props.ownerId === authStore.user?.id) return true;
+  return props.sharedWith?.some(s => 
+    (s.userId?._id || s.userId) === authStore.user?.id && s.role === 'editor'
+  ) ?? false;
+});
+
+watch(canEdit, (newEditableState) => {
+  if (editor.value) {
+    editor.value.setEditable(newEditableState);
+  }
+});
+
 // Solo logic Tiptap ed Yjs di seguito:
 
 const editor = useEditor({
+  editable: canEdit.value,
   extensions: [
     StarterKit.configure({
       undoRedo: false,
@@ -138,7 +158,7 @@ onBeforeUnmount(() => {
   <div class="editor-wrapper" v-if="editor">
     <EditorToolbar :editor="editor" />
 
-    <div class="document-page" @click="editor?.commands.focus()">
+    <div class="document-page" @click="editor.isEditable && editor.commands.focus()">
       <EditorContent :editor="editor" class="editor-content" />
     </div>
   </div>
