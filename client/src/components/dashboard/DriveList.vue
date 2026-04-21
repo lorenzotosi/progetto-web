@@ -30,7 +30,7 @@ const getOwnerName = (owner: any) => {
   if (!owner) return 'Sconosciuto';
   // Gestiamo sia owner come stringa ID che come oggetto popolato
   const id = typeof owner === 'string' ? owner : owner._id;
-  if (id === authStore.user?.id) return 'io';
+  if (id === authStore.user?.id) return authStore.user?.firstName + ' ' + authStore.user?.lastName;
   
   if (typeof owner === 'object' && owner.firstName) {
     return `${owner.firstName} ${owner.lastName}`;
@@ -64,8 +64,8 @@ const getOwnerName = (owner: any) => {
           </div>
           <div class="col-owner">{{ getOwnerName(folder.ownerId) }}</div>
           <div class="col-date">{{ formatDate(folder.updatedAt) }}</div>
-          <div v-if="authStore.isAuthenticated() && authStore.user?.id === (folder.ownerId?._id || folder.ownerId)" class="col-actions">
-            <button class="icon-btn delete-btn" @click.stop="emit('delete-folder', folder._id)" title="Elimina cartella">🗑️</button>
+          <div class="col-actions">
+            <button v-if="authStore.isAuthenticated() && authStore.user?.id === (folder.ownerId?._id || folder.ownerId)" class="icon-btn delete-btn" @click.stop="emit('delete-folder', folder._id)" title="Elimina cartella">🗑️</button>
           </div>
         </div>
       </template>
@@ -85,8 +85,8 @@ const getOwnerName = (owner: any) => {
           </div>
           <div class="col-owner">{{ getOwnerName(document.ownerId) }}</div>
           <div class="col-date">{{ formatDate(document.updatedAt) }}</div>
-          <div v-if="authStore.isAuthenticated() && authStore.user?.id === (document.ownerId?._id || document.ownerId)" class="col-actions">
-             <button class="icon-btn delete-btn" @click.stop="emit('delete-document', document._id)" title="Elimina documento">🗑️</button>
+          <div class="col-actions">
+             <button v-if="authStore.isAuthenticated() && authStore.user?.id === (document.ownerId?._id || document.ownerId)" class="icon-btn delete-btn" @click.stop="emit('delete-document', document._id)" title="Elimina documento">🗑️</button>
           </div>
         </div>
       </template>
