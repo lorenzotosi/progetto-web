@@ -28,7 +28,6 @@ const formatDate = (dateString?: string) => {
 
 const getOwnerName = (owner: any) => {
   if (!owner) return 'Sconosciuto';
-  // Gestiamo sia owner come stringa ID che come oggetto popolato
   const id = typeof owner === 'string' ? owner : owner._id;
   if (id === authStore.user?.id) return authStore.user?.firstName + ' ' + authStore.user?.lastName;
   

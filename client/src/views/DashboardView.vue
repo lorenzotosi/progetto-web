@@ -6,7 +6,6 @@ import { useAuthStore } from '../stores/auth.store';
 import TopBar from '../components/dashboard/TopBar.vue';
 import SideBar from '../components/dashboard/SideBar.vue';
 import MainWorkspace from '../components/dashboard/MainWorkspace.vue';
-
 const folderStore = useFolderStore();
 const documentStore = useDocumentStore();
 const authStore = useAuthStore();
@@ -14,13 +13,12 @@ const currentSection = ref<'private' | 'public'>('private');
 const currentFolderId = ref<string | null>(null);
 const searchQuery = ref('');
 
-// Watcher per refresh automatico al login/logout
 watch(() => authStore.token, (newToken) => {
   if (newToken) {
-    // Al login, vai in automatico su private
+    // Al login vai in automatico su private
     handleSectionChange('private');
   } else if (!newToken && currentSection.value === 'private') {
-    // Al logout, se l'utente è in private, lo spostiamo in public
+    // Al logout vai in public
     handleSectionChange('public');
   } else {
     refreshData();
@@ -32,12 +30,33 @@ const folderStack = ref<{id: string | null, name: string}[]>([
   { id: null, name: 'Il Mio Dok' }
 ]);
 
+watch([currentSection, folderStack], ([newSection, newStack]) => {
+  localStorage.setItem('dok_last_section', newSection);
+  localStorage.setItem('dok_last_stack', JSON.stringify(newStack));
+  localStorage.setItem('dok_last_folder_id', currentFolderId.value || '');
+}, { deep: true });
+
 onMounted(() => {
-  if (!authStore.token) {
-    handleSectionChange('public');
-  } else {
-    refreshData();
+  const savedSection = localStorage.getItem('dok_last_section') as 'private' | 'public';
+  const savedStack = localStorage.getItem('dok_last_stack');
+  const savedFolderId = localStorage.getItem('dok_last_folder_id');
+
+  if (savedSection) {
+    currentSection.value = savedSection;
+  } else if (!authStore.token) {
+    currentSection.value = 'public';
   }
+
+  if (savedStack) {
+    try {
+      folderStack.value = JSON.parse(savedStack);
+      currentFolderId.value = savedFolderId || null;
+    } catch (e) {
+      console.error("Errore nel ripristino del percorso salvato", e);
+    }
+  }
+
+  refreshData();
 });
 
 const refreshData = () => {
