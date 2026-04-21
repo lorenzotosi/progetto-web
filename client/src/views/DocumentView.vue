@@ -3,7 +3,9 @@ import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '../services/api';
 import Editor from '../components/editor/Editor.vue';
+import { useAuthStore } from '../stores/auth.store';
 
+const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const documentId = route.params.id as string;
@@ -63,12 +65,15 @@ const handleRename = async () => {
         </button>
         <span class="dok-icon">📄</span>
         <div class="doc-title-container" v-if="documentData">
-          <input 
+          <input v-if="authStore.isAuthenticated() && authStore.user?.id === (documentData.ownerId?._id || documentData.ownerId)"
             type="text" 
             class="doc-title-input" 
             v-model="documentData.title" 
             @change="handleRename"
           />
+          <span v-else
+            v-text="documentData.title"
+          ></span>
         </div>
       </div>
       <div class="actions">
@@ -103,7 +108,7 @@ const handleRename = async () => {
     </div>
 
     <div v-else-if="documentData" class="editor-area">
-      <Editor ref="editorRef" :documentId="documentId" />
+      <Editor ref="editorRef" :documentId="documentId" :ownerId="documentData.ownerId?._id || documentData.ownerId" :sharedWith="documentData.sharedWith" />
     </div>
   </div>
 </template>
