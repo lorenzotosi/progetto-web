@@ -64,7 +64,7 @@ const getOwnerName = (owner: any) => {
           </div>
           <div class="col-owner">{{ getOwnerName(folder.ownerId) }}</div>
           <div class="col-date">{{ formatDate(folder.updatedAt) }}</div>
-          <div class="col-actions">
+          <div v-if="authStore.isAuthenticated() && authStore.user?.id === (folder.ownerId?._id || folder.ownerId)" class="col-actions">
             <button class="icon-btn delete-btn" @click.stop="emit('delete-folder', folder._id)" title="Elimina cartella">🗑️</button>
           </div>
         </div>
@@ -85,7 +85,7 @@ const getOwnerName = (owner: any) => {
           </div>
           <div class="col-owner">{{ getOwnerName(document.ownerId) }}</div>
           <div class="col-date">{{ formatDate(document.updatedAt) }}</div>
-          <div class="col-actions">
+          <div v-if="authStore.isAuthenticated() && authStore.user?.id === (document.ownerId?._id || document.ownerId)" class="col-actions">
              <button class="icon-btn delete-btn" @click.stop="emit('delete-document', document._id)" title="Elimina documento">🗑️</button>
           </div>
         </div>

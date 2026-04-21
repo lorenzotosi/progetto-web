@@ -35,7 +35,7 @@ const emit = defineEmits<{
             <span class="name">{{ folder.name }}</span>
             <span v-if="isPublic && (folder.ownerId._id || folder.ownerId) === authStore.user?.id" class="owner-tag">owner</span>
           </div>
-          <button class="delete-btn" @click.stop="emit('delete-folder', folder._id)" title="Elimina cartella">🗑️</button>
+          <button v-if="authStore.isAuthenticated() && authStore.user?.id === (folder.ownerId?._id || folder.ownerId)" class="delete-btn" @click.stop="emit('delete-folder', folder._id)" title="Elimina cartella">🗑️</button>
         </div>
       </div>
     </div>
@@ -60,7 +60,7 @@ const emit = defineEmits<{
               <span class="name">{{ document.title }}</span>
               <span v-if="isPublic && (document.ownerId._id || document.ownerId) === authStore.user?.id" class="owner-tag">owner</span>
             </div>
-            <button class="delete-btn" @click.stop="emit('delete-document', document._id)" title="Elimina documento">🗑️</button>
+            <button v-if="authStore.isAuthenticated() && authStore.user?.id === (document.ownerId?._id || document.ownerId)" class="delete-btn" @click.stop="emit('delete-document', document._id)" title="Elimina documento">🗑️</button>
           </div>
         </div>
       </div>
