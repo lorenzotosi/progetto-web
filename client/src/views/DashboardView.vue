@@ -9,7 +9,7 @@ import MainWorkspace from '../components/dashboard/MainWorkspace.vue';
 const folderStore = useFolderStore();
 const documentStore = useDocumentStore();
 const authStore = useAuthStore();
-const currentSection = ref<'private' | 'public'>('private');
+const currentSection = ref<'private' | 'public' | 'shared'>('private');
 const currentFolderId = ref<string | null>(null);
 const searchQuery = ref('');
 
@@ -64,10 +64,14 @@ const refreshData = () => {
   documentStore.fetchDocuments(currentFolderId.value);
 };
 
-const handleSectionChange = (section: 'private' | 'public') => {
+const handleSectionChange = (section: 'private' | 'public' | 'shared') => {
   currentSection.value = section;
   currentFolderId.value = null;
-  const name = section === 'private' ? 'Il Mio Dok' : 'Dok globali';
+  
+  let name = 'Il Mio Dok';
+  if (section === 'public') name = 'Dok globali';
+  else if (section === 'shared') name = 'Condivisi con me';
+
   folderStack.value = [{ id: null, name }]; 
   refreshData();
 };
@@ -91,11 +95,13 @@ const handleBack = () => {
 };
 
 const handleCreateDocument = async (name: string) => {
-  await documentStore.createDocument(name, currentSection.value, currentFolderId.value);
+  const visibility = currentSection.value === 'public' ? 'public' : 'private';
+  await documentStore.createDocument(name, visibility, currentFolderId.value);
 };
 
 const handleCreateFolder = async (name: string) => {
-  await folderStore.createFolder(name, currentFolderId.value, currentSection.value);
+  const visibility = currentSection.value === 'public' ? 'public' : 'private';
+  await folderStore.createFolder(name, currentFolderId.value, visibility);
 };
 
 const handleDeleteFolder = async (id: string) => {

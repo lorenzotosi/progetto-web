@@ -1,20 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useAuthStore } from '../../stores/auth.store';
+import AuthModal from '../auth/AuthModal.vue';
 
 const authStore = useAuthStore();
+const isModalOpen = ref(false);
 
 const props = defineProps<{
-  activeSection: 'private' | 'public';
+  activeSection: 'private' | 'public' | 'shared';
 }>();
 
 const emit = defineEmits<{
   (e: 'create-document', name: string): void;
   (e: 'create-folder', name: string): void;
-  (e: 'section-change', section: 'private' | 'public'): void;
+  (e: 'section-change', section: 'private' | 'public' | 'shared'): void;
 }>();
 
-const setSection = (section: 'private' | 'public') => {
+const setSection = (section: 'private' | 'public' | 'shared') => {
   emit('section-change', section);
 };
 
@@ -46,7 +48,7 @@ const handleCreateFolder = () => {
 <template>
   <aside class="sidebar">
     <div v-if="authStore.isAuthenticated()" class="new-btn-wrapper">
-      <button class="btn-nuovo" @click="showMenu = !showMenu">
+      <button class="btn-nuovo" @click="showMenu = !showMenu" :disabled="activeSection === 'shared'">
         <span class="plus-icon">➕</span> Nuovo
       </button>
 
@@ -88,16 +90,19 @@ const handleCreateFolder = () => {
       <div 
         class="nav-item" 
         :class="{ 
-          'is-active': activeSection === 'private',
-          'is-disabled': !authStore.isAuthenticated()
+          'is-active': activeSection === 'private'
          }"
-        @click="setSection('private')"
+        @click="authStore.isAuthenticated() ? setSection('private') : isModalOpen = true"
       >
         <span class="icon">🏠</span>
         <span class="label">Il Mio Dok</span>
       </div>
-      <!-- TODO: Da implementare in futuro -->
-      <div class="nav-item is-disabled">
+      <!-- CONDIVISI -->
+      <div class="nav-item"
+      :class="{ 
+          'is-active': activeSection === 'shared'
+         }"
+        @click="authStore.isAuthenticated() ? setSection('shared') : isModalOpen = true">
         <span class="icon">👥</span>
         <span class="label">Condivisi con me</span>
       </div>
@@ -109,12 +114,14 @@ const handleCreateFolder = () => {
         <span class="icon">🌍</span>
         <span class="label">Dok globali</span>
       </div>
-      <!-- TODO: Da implementare in futuro -->
+      <!-- CESTINO -->
       <div class="nav-item is-disabled">
         <span class="icon">🗑️</span>
         <span class="label">Cestino</span>
       </div>
     </nav>
+
+    <AuthModal :is-open="isModalOpen" @close="isModalOpen = false" />
   </aside>
 </template>
 
@@ -148,9 +155,17 @@ const handleCreateFolder = () => {
   width: auto;
 }
 
-.btn-nuovo:hover {
+.btn-nuovo:hover:not(:disabled) {
   background-color: #f8f9fa;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.btn-nuovo:disabled {
+  background-color: #f1f3f4;
+  color: #9aa0a6;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.8;
 }
 
 .plus-icon {
