@@ -44,5 +44,14 @@ export const useDocumentStore = defineStore('document', () => {
         }
     };
 
-    return { documents, fetchDocuments, createDocument, deleteDocument };
+    const fetchSharedDocuments = async () => {
+        try {
+            const response = await api.get('/documents/shared');
+            documents.value = response.data;
+        } catch (error) {
+            console.error('Errore nel caricamento documenti condivisi', error);
+        }
+    };
+
+    return { documents, fetchDocuments, createDocument, deleteDocument, fetchSharedDocuments };
 });

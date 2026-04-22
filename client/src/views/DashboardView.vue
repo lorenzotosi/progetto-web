@@ -17,8 +17,8 @@ watch(() => authStore.token, (newToken) => {
   if (newToken) {
     // Al login vai in automatico su private
     handleSectionChange('private');
-  } else if (!newToken && currentSection.value === 'private') {
-    // Al logout vai in public
+  } else if (!newToken && (currentSection.value === 'private' || currentSection.value === 'shared')) {
+    // Al logout vai in public sempre
     handleSectionChange('public');
   } else {
     refreshData();
@@ -60,8 +60,13 @@ onMounted(() => {
 });
 
 const refreshData = () => {
-  folderStore.fetchFolders(currentFolderId.value);
-  documentStore.fetchDocuments(currentFolderId.value);
+  if (currentSection.value === 'shared') {
+    documentStore.fetchSharedDocuments();
+    folderStore.folders = [];
+  } else {
+    folderStore.fetchFolders(currentFolderId.value);
+    documentStore.fetchDocuments(currentFolderId.value);
+  }
 };
 
 const handleSectionChange = (section: 'private' | 'public' | 'shared') => {
@@ -116,7 +121,7 @@ const handleDeleteDocument = async (id: string) => {
 
 const filteredDocuments = computed(() => {
   return documentStore.documents.filter(doc => {
-    const matchesVisibility = doc.visibility === currentSection.value;
+    const matchesVisibility = currentSection.value === 'shared' || doc.visibility === currentSection.value;
     const matchesSearch = doc.title.toLowerCase().includes(searchQuery.value.toLowerCase());
     return matchesVisibility && matchesSearch;
   });

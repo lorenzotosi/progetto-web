@@ -17,12 +17,13 @@ export class DocumentService {
         return await Document.findById(id);
     }
 
-    static async getPrivateDocumentById(id: string, ownerId: string) {
+    static async getPrivateDocumentById(id: string, userId: string) {
         return await Document.findOne({
             _id: id,
             $or: [
                 { visibility: 'public' },
-                { ownerId }
+                { ownerId: userId },
+                { 'sharedWith.userId': userId }
             ]
         });
     }

@@ -98,6 +98,7 @@ const handleRename = async () => {
             </div>
           </transition>
         </div>
+        <!-- TODO: AGGIUNGERE FUNZIONALITà DI CONDIVISIONE -->
         <button class="share-btn">Condividi</button>
         <div class="avatar" title="Account Google fittizio">U</div>
       </div>

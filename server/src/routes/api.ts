@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { createFolder, getFoldersInsideParent, getAllFolders, deleteFolder } from '../controllers/folder.controller.js';
-import { createDoc, getDoc, getAllDocuments, deleteDocument, renameDocument } from '../controllers/document.controller.js';
+import { createDoc, getDoc, getAllDocuments, deleteDocument, renameDocument, getSharedDocs } from '../controllers/document.controller.js';
 import { requireBodyField, validateMongoIdParam } from '../middlewares/validation.middleware.js';
 import authRoutes from './auth.routes.js';
 import { requireAuth, optionalAuth } from '../middlewares/auth.middleware.js';
@@ -17,7 +17,8 @@ router.get('/folders/all', optionalAuth, getAllFolders);    // Ottieni la lista 
 router.delete('/folders/:_id', requireAuth, validateMongoIdParam('_id'), deleteFolder);    // Elimina cartella (ID valido richiesto)
 
 // Endpoint per i Documenti
-router.post('/documents', requireAuth, requireBodyField('title'), createDoc); // Crea documento, 'title' obbligatorio
+router.post('/documents', requireAuth, requireBodyField('title'), createDoc);
+router.get('/documents/shared', requireAuth, getSharedDocs);
 router.get('/documents/:id', optionalAuth, getDoc);
 router.get('/documents', optionalAuth, getAllDocuments);
 router.delete('/documents/:id', requireAuth, validateMongoIdParam('id'), deleteDocument); // Elimina doc (ID valido richiesto)
