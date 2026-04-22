@@ -56,8 +56,9 @@ export class DocumentService {
         return await Document.findByIdAndUpdate(id, { title: newTitle }, { new: true });
     }
 
-    //da testare se va
     static async getSharedDocuments(userId: string) {
-        return await Document.find({ 'sharedWith.userId': userId }).sort({ createdAt: -1 });
+        return await Document.find({ 'sharedWith.userId': userId })
+            .populate('ownerId', 'firstName lastName')
+            .sort({ createdAt: -1 });
     }
 }
