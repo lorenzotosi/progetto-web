@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-
 import { useAuthStore } from '../../stores/auth.store';
+import BaseIcon from '../common/BaseIcon.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -17,6 +17,7 @@ const emit = defineEmits<{
   (e: 'delete-document', id: string): void;
   (e: 'enter-folder', id: string): void;
 }>();
+
 const formatDate = (dateString?: string) => {
   if (!dateString) return '---';
   return new Intl.DateTimeFormat('it-IT', {
@@ -29,70 +30,87 @@ const formatDate = (dateString?: string) => {
 const getOwnerName = (owner: any) => {
   if (!owner) return 'Sconosciuto';
   const id = typeof owner === 'string' ? owner : owner._id;
-  if (id === authStore.user?.id) return authStore.user?.firstName + ' ' + authStore.user?.lastName;
+  if (id === authStore.user?.id) return `${authStore.user?.firstName} ${authStore.user?.lastName}`;
   
   if (typeof owner === 'object' && owner.firstName) {
     return `${owner.firstName} ${owner.lastName}`;
   }
   return 'Altro';
 };
+
+const isOwner = (item: any) => {
+  const ownerId = item.ownerId?._id || item.ownerId;
+  return authStore.user?.id === ownerId;
+};
 </script>
 
 <template>
   <div class="list-view">
-    <div class="list-header">
-      <div class="col-name">Nome</div>
-      <div class="col-owner">Proprietario</div>
-      <div class="col-date">Ultima modifica</div>
-      <div class="col-actions"></div>
+    <div class="list-header" role="row">
+      <div class="col col-name" role="columnheader">Nome</div>
+      <div class="col col-owner" role="columnheader">Proprietario</div>
+      <div class="col col-date" role="columnheader">Ultima modifica</div>
+      <div class="col col-actions" role="columnheader"></div>
     </div>
 
-    <div class="list-body">
+    <ul class="list-body">
       <!-- Sezione Cartelle -->
-      <template v-if="folders.length > 0">
-        <div 
-          v-for="folder in folders" 
-          :key="folder._id" 
-          class="list-row folder-row"
-          @click="emit('enter-folder', folder._id)"
-        >
-          <div class="col-name">
-            <span class="icon">🗂️</span>
-            <span class="name">{{ folder.name }}</span>
-            <span v-if="isPublic && (folder.ownerId._id || folder.ownerId) === authStore.user?.id" class="owner-tag">owner</span>
-          </div>
-          <div class="col-owner">{{ getOwnerName(folder.ownerId) }}</div>
-          <div class="col-date">{{ formatDate(folder.updatedAt) }}</div>
-          <div class="col-actions">
-            <button v-if="authStore.isAuthenticated() && authStore.user?.id === (folder.ownerId?._id || folder.ownerId)" class="icon-btn delete-btn" @click.stop="emit('delete-folder', folder._id)" title="Elimina cartella">🗑️</button>
-          </div>
+      <li 
+        v-for="folder in folders" 
+        :key="folder._id" 
+        class="list-row folder-row"
+        @click="emit('enter-folder', folder._id)"
+        role="row"
+      >
+        <div class="col col-name">
+          <BaseIcon name="folder" class="icon-folder" />
+          <span class="name">{{ folder.name }}</span>
+          <span v-if="isPublic && isOwner(folder)" class="owner-tag">owner</span>
         </div>
-      </template>
+        <div class="col col-owner">{{ getOwnerName(folder.ownerId) }}</div>
+        <div class="col col-date">{{ formatDate(folder.updatedAt) }}</div>
+        <div class="col col-actions">
+          <button 
+            v-if="authStore.isAuthenticated() && isOwner(folder)" 
+            class="action-btn delete-btn" 
+            @click.stop="emit('delete-folder', folder._id)" 
+            title="Elimina cartella"
+          >
+            <BaseIcon name="trash" size="16" />
+          </button>
+        </div>
+      </li>
 
       <!-- Sezione Documenti -->
-      <template v-if="documents.length > 0">
-        <div 
-          v-for="document in documents" 
-          :key="document._id" 
-          class="list-row document-row"
-          @click="router.push(`/document/${document._id}`)"
-        >
-          <div class="col-name">
-            <span class="icon">📄</span>
-            <span class="name">{{ document.title }}</span>
-            <span v-if="isPublic && (document.ownerId._id || document.ownerId) === authStore.user?.id" class="owner-tag">owner</span>
-            <span v-if="document.myRole && !(isPublic && document.myRole === 'viewer')" class="role-tag" :class="document.myRole">
-              {{ document.myRole }}
-            </span>
-          </div>
-          <div class="col-owner">{{ getOwnerName(document.ownerId) }}</div>
-          <div class="col-date">{{ formatDate(document.updatedAt) }}</div>
-          <div class="col-actions">
-             <button v-if="authStore.isAuthenticated() && authStore.user?.id === (document.ownerId?._id || document.ownerId)" class="icon-btn delete-btn" @click.stop="emit('delete-document', document._id)" title="Elimina documento">🗑️</button>
-          </div>
+      <li 
+        v-for="document in documents" 
+        :key="document._id" 
+        class="list-row document-row"
+        @click="router.push(`/document/${document._id}`)"
+        role="row"
+      >
+        <div class="col col-name">
+          <BaseIcon name="file" class="icon-file" />
+          <span class="name">{{ document.title }}</span>
+          <span v-if="isPublic && isOwner(document)" class="owner-tag">owner</span>
+          <span v-if="document.myRole && !(isPublic && document.myRole === 'viewer')" class="role-tag" :class="document.myRole">
+            {{ document.myRole }}
+          </span>
         </div>
-      </template>
-    </div>
+        <div class="col col-owner">{{ getOwnerName(document.ownerId) }}</div>
+        <div class="col col-date">{{ formatDate(document.updatedAt) }}</div>
+        <div class="col col-actions">
+          <button 
+            v-if="authStore.isAuthenticated() && isOwner(document)" 
+            class="action-btn delete-btn" 
+            @click.stop="emit('delete-document', document._id)" 
+            title="Elimina documento"
+          >
+            <BaseIcon name="trash" size="16" />
+          </button>
+        </div>
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -113,6 +131,12 @@ const getOwnerName = (owner: any) => {
   font-weight: 500;
 }
 
+.list-body {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
 .list-row {
   display: flex;
   align-items: center;
@@ -129,12 +153,22 @@ const getOwnerName = (owner: any) => {
   background-color: #f8f9fa;
 }
 
-.col-name {
-  flex: 2;
+.col {
   display: flex;
   align-items: center;
+}
+
+.col-name {
+  flex: 2;
   gap: 16px;
   font-weight: 500;
+  overflow: hidden;
+}
+
+.name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .col-owner {
@@ -147,24 +181,30 @@ const getOwnerName = (owner: any) => {
 
 .col-actions {
   width: 48px;
-  display: flex;
   justify-content: flex-end;
 }
 
-.icon {
-  font-size: 20px;
-}
+.icon-folder { color: #5f6368; }
+.icon-file { color: #4285f4; }
 
-.icon-btn {
+.action-btn {
   background: transparent;
   border: none;
-  font-size: 16px;
+  color: #5f6368;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, color 0.2s;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
 }
 
-.list-row:hover .icon-btn {
+.action-btn:hover {
+  background-color: rgba(0,0,0,0.05);
+  color: #d93025;
+}
+
+.list-row:hover .action-btn {
   opacity: 1;
 }
 

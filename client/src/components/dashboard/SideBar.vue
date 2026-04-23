@@ -60,73 +60,76 @@ const handleCreateFolder = () => {
         <span class="plus-icon">➕</span> Nuovo
       </button>
 
-      <!-- Dropdown menu per la creazione -->
-      <div v-if="showMenu" class="dropdown-menu">
-        <button v-if="!showFolderInput" class="dropdown-item" @click="showFolderInput = true; showDocInput = false">
-          <span class="icon">🗂️</span> Nuova cartella
-        </button>
-        <div v-else class="folder-input-wrapper">
-          <input 
-            v-model="newFolderName" 
-            type="text" 
-            placeholder="Titolo cartella" 
-            @keyup.enter="handleCreateFolder"
-            class="folder-input"
-          />
-          <button @click="handleCreateFolder" class="folder-confirm-btn">Crea</button>
+      <!-- Dropdown menu -->
+      <transition name="fade">
+        <div v-if="showMenu" class="dropdown-menu">
+          <button v-if="!showFolderInput" class="dropdown-item" @click="showFolderInput = true; showDocInput = false">
+            <span class="icon">🗂️</span> Nuova cartella
+          </button>
+          <div v-else class="input-wrapper">
+            <input 
+              v-model="newFolderName" 
+              type="text" 
+              placeholder="Titolo cartella" 
+              @keyup.enter="handleCreateFolder"
+              class="sidebar-input"
+              autoFocus
+            />
+            <button @click="handleCreateFolder" class="confirm-btn">Crea</button>
+          </div>
+          
+          <div class="divider"></div>
+          
+          <button v-if="!showDocInput" class="dropdown-item" @click="showDocInput = true; showFolderInput = false">
+            <span class="icon">📄</span> Documento Dok
+          </button>
+          <div v-else class="input-wrapper">
+            <input 
+              v-model="newDocName" 
+              type="text" 
+              placeholder="Titolo documento" 
+              @keyup.enter="handleCreateDoc"
+              class="sidebar-input"
+              autoFocus
+            />
+            <button @click="handleCreateDoc" class="confirm-btn">Crea</button>
+          </div>
         </div>
-        
-        <div class="divider"></div>
-        
-        <button v-if="!showDocInput" class="dropdown-item" @click="showDocInput = true; showFolderInput = false">
-          <span class="icon">📄</span> Documento Dok
-        </button>
-        <div v-else class="folder-input-wrapper">
-          <input 
-            v-model="newDocName" 
-            type="text" 
-            placeholder="Titolo documento" 
-            @keyup.enter="handleCreateDoc"
-            class="folder-input"
-          />
-          <button @click="handleCreateDoc" class="folder-confirm-btn">Crea</button>
-        </div>
-      </div>
+      </transition>
     </div>
 
     <nav class="nav-list">
-      <div 
+      <button 
         class="nav-item" 
-        :class="{ 
-          'is-active': activeSection === 'private'
-         }"
+        :class="{ 'is-active': activeSection === 'private' }"
         @click="authStore.isAuthenticated() ? setSection('private') : isModalOpen = true"
       >
         <span class="icon">🏠</span>
         <span class="label">Il Mio Dok</span>
-      </div>
-      <!-- CONDIVISI -->
-      <div class="nav-item"
-      :class="{ 
-          'is-active': activeSection === 'shared'
-         }"
-        @click="authStore.isAuthenticated() ? setSection('shared') : isModalOpen = true">
+      </button>
+
+      <button 
+        class="nav-item"
+        :class="{ 'is-active': activeSection === 'shared' }"
+        @click="authStore.isAuthenticated() ? setSection('shared') : isModalOpen = true"
+      >
         <span class="icon">👥</span>
         <span class="label">Condivisi con me</span>
-      </div>
-      <div 
+      </button>
+
+      <button 
         class="nav-item"
         :class="{ 'is-active': activeSection === 'public' }"
         @click="setSection('public')"
       >
         <span class="icon">🌍</span>
         <span class="label">Dok globali</span>
-      </div>
-      <!-- CESTINO -->
-      <div class="nav-item is-disabled">
+      </button>
+
+      <button class="nav-item is-disabled" disabled>
         <span class="icon">🗑️</span>
         <span class="label">Cestino</span>
-      </div>
+      </button>
     </nav>
 
     <AuthModal :is-open="isModalOpen" @close="isModalOpen = false" />
@@ -139,6 +142,7 @@ const handleCreateFolder = () => {
   padding: 16px;
   display: flex;
   flex-direction: column;
+  background-color: transparent;
 }
 
 .new-btn-wrapper {
@@ -153,14 +157,13 @@ const handleCreateFolder = () => {
   background-color: #fff;
   border: none;
   border-radius: 16px;
-  padding: 18px 24px 18px 16px; /* Spazio extra a destra */
+  padding: 18px 24px 18px 16px;
   font-size: 14px;
   font-weight: 500;
   color: #3c4043;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  transition: box-shadow 0.2s, background-color 0.2s;
-  width: auto;
+  transition: all 0.2s ease;
 }
 
 .btn-nuovo:hover:not(:disabled) {
@@ -172,12 +175,7 @@ const handleCreateFolder = () => {
   background-color: #f1f3f4;
   color: #9aa0a6;
   cursor: not-allowed;
-  box-shadow: none;
   opacity: 0.8;
-}
-
-.plus-icon {
-  font-size: 20px;
 }
 
 .dropdown-menu {
@@ -188,17 +186,15 @@ const handleCreateFolder = () => {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   padding: 8px 0;
-  width: 200px;
+  width: 220px;
   z-index: 100;
-  display: flex;
-  flex-direction: column;
 }
 
 .dropdown-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 16px;
+  padding: 10px 16px;
   background: transparent;
   border: none;
   width: 100%;
@@ -206,35 +202,35 @@ const handleCreateFolder = () => {
   cursor: pointer;
   color: #3c4043;
   font-size: 14px;
-  font-family: inherit;
 }
 
 .dropdown-item:hover {
   background-color: #f1f3f4;
 }
 
-.folder-input-wrapper {
+.input-wrapper {
   padding: 8px 16px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 8px;
 }
 
-.folder-input {
+.sidebar-input {
   width: 100%;
-  padding: 4px 8px;
+  padding: 6px 8px;
   border: 1px solid #1a73e8;
   border-radius: 4px;
   font-size: 13px;
   outline: none;
 }
 
-.folder-confirm-btn {
+.confirm-btn {
   background-color: #1a73e8;
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 5px 8px;
+  padding: 6px;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -260,6 +256,9 @@ const handleCreateFolder = () => {
   color: #3c4043;
   font-size: 14px;
   font-weight: 500;
+  border: none;
+  background: transparent;
+  text-align: left;
   margin-right: 16px;
   transition: background-color 0.2s;
 }
@@ -276,5 +275,15 @@ const handleCreateFolder = () => {
 .nav-item.is-disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.fade-enter-active, 
+.fade-leave-active {
+  transition: opacity 0.2s, transform 0.2s;
+}
+.fade-enter-from, 
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>

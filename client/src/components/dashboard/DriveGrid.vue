@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-
 import { useAuthStore } from '../../stores/auth.store';
+import BaseIcon from '../common/BaseIcon.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -17,11 +17,17 @@ const emit = defineEmits<{
   (e: 'delete-document', id: string): void;
   (e: 'enter-folder', id: string): void;
 }>();
+
+const isOwner = (item: any) => {
+  const ownerId = item.ownerId?._id || item.ownerId;
+  return authStore.user?.id === ownerId;
+};
 </script>
 
 <template>
   <div class="grid-view">
-    <div v-if="folders.length > 0" class="section">
+    <!-- Sezione Cartelle -->
+    <section v-if="folders.length > 0" class="grid-section">
       <h3 class="section-title">Cartelle</h3>
       <div class="grid">
         <div 
@@ -29,18 +35,28 @@ const emit = defineEmits<{
           :key="folder._id" 
           class="grid-card folder-card"
           @click="emit('enter-folder', folder._id)"
+          role="button"
+          tabindex="0"
         >
-          <div class="card-content">
-            <span class="icon">🗂️</span>
+          <div class="card-header">
+            <BaseIcon name="folder" class="icon-folder" />
             <span class="name">{{ folder.name }}</span>
-            <span v-if="isPublic && (folder.ownerId._id || folder.ownerId) === authStore.user?.id" class="owner-tag">owner</span>
+            <span v-if="isPublic && isOwner(folder)" class="owner-tag">owner</span>
           </div>
-          <button v-if="authStore.isAuthenticated() && authStore.user?.id === (folder.ownerId?._id || folder.ownerId)" class="delete-btn" @click.stop="emit('delete-folder', folder._id)" title="Elimina cartella">🗑️</button>
+          <button 
+            v-if="authStore.isAuthenticated() && isOwner(folder)" 
+            class="action-btn" 
+            @click.stop="emit('delete-folder', folder._id)" 
+            title="Elimina cartella"
+          >
+            <BaseIcon name="trash" size="14" />
+          </button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div v-if="documents.length > 0" class="section">
+    <!-- Sezione Documenti -->
+    <section v-if="documents.length > 0" class="grid-section">
       <h3 class="section-title">File</h3>
       <div class="grid doc-grid">
         <div 
@@ -48,6 +64,8 @@ const emit = defineEmits<{
           :key="document._id" 
           class="grid-card document-card" 
           @click="router.push(`/document/${document._id}`)"
+          role="button"
+          tabindex="0"
         >
           <div class="doc-preview">
              <div class="preview-line"></div>
@@ -56,18 +74,25 @@ const emit = defineEmits<{
           </div>
           <div class="doc-footer">
             <div class="doc-info">
-              <span class="icon">📄</span>
+              <BaseIcon name="file" class="icon-file" size="18" />
               <span class="name">{{ document.title }}</span>
-              <span v-if="isPublic && (document.ownerId._id || document.ownerId) === authStore.user?.id" class="owner-tag">owner</span>
+              <span v-if="isPublic && isOwner(document)" class="owner-tag">owner</span>
               <span v-if="document.myRole && !(isPublic && document.myRole === 'viewer')" class="role-tag" :class="document.myRole">
                 {{ document.myRole }}
               </span>
             </div>
-            <button v-if="authStore.isAuthenticated() && authStore.user?.id === (document.ownerId?._id || document.ownerId)" class="delete-btn" @click.stop="emit('delete-document', document._id)" title="Elimina documento">🗑️</button>
+            <button 
+              v-if="authStore.isAuthenticated() && isOwner(document)" 
+              class="action-btn" 
+              @click.stop="emit('delete-document', document._id)" 
+              title="Elimina documento"
+            >
+              <BaseIcon name="trash" size="14" />
+            </button>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
@@ -75,7 +100,7 @@ const emit = defineEmits<{
 .grid-view {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
 }
 
 .section-title {
@@ -93,17 +118,22 @@ const emit = defineEmits<{
 
 /* Card base */
 .grid-card {
-  background-color: #f1f3f4; /* Grigio Drive classico */
+  background-color: #f1f3f4;
   border: 1px solid transparent;
   border-radius: 8px;
   cursor: pointer;
   position: relative;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
   overflow: hidden;
 }
 
 .grid-card:hover {
   background-color: #e8eaed;
+}
+
+.grid-card:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
 }
 
 /* Folders */
@@ -115,12 +145,15 @@ const emit = defineEmits<{
   height: 48px;
 }
 
-.card-content {
+.card-header {
   display: flex;
   align-items: center;
   gap: 12px;
   overflow: hidden;
 }
+
+.icon-folder { color: #5f6368; }
+.icon-file { color: #4285f4; }
 
 /* Documents */
 .document-card {
@@ -133,7 +166,7 @@ const emit = defineEmits<{
   flex: 1;
   background-color: #fff;
   border-bottom: 1px solid #dadce0;
-  padding: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -207,16 +240,24 @@ const emit = defineEmits<{
   color: #616161;
 }
 
-.delete-btn {
+.action-btn {
   background: transparent;
   border: none;
   cursor: pointer;
   opacity: 0;
-  font-size: 16px;
-  transition: opacity 0.2s;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  transition: all 0.2s;
+  color: #5f6368;
 }
 
-.grid-card:hover .delete-btn {
+.grid-card:hover .action-btn {
   opacity: 1;
+}
+
+.action-btn:hover {
+  background-color: rgba(0,0,0,0.05);
+  color: #d93025;
 }
 </style>
