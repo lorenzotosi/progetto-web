@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, computed, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
@@ -8,14 +8,11 @@ import Underline from '@tiptap/extension-underline';
 import { TextStyle, FontSize }  from '@tiptap/extension-text-style';
 import FontFamily from '@tiptap/extension-font-family';
 import EditorToolbar from './EditorToolbar.vue';
-import * as Y from 'yjs';
-import { io } from 'socket.io-client';
-import { Awareness } from 'y-protocols/awareness';
-import * as awarenessProtocol from 'y-protocols/awareness';
 import CollaborationCaret from '@tiptap/extension-collaboration-caret';
 import { Color } from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
-import { useAuthStore } from '../../stores/auth.store.js';
+import { useAuthStore } from '../../stores/auth.store';
+import { useCollaboration } from '../../composables/useCollaboration';
 
 const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
 
@@ -25,71 +22,13 @@ const props = defineProps<{
   sharedWith?: any[];
 }>();
 
-console.log(props)
-console.log(props.sharedWith)
-
 const authStore = useAuthStore();
-const ydoc = new Y.Doc();
-//const socket = io('http://localhost:3000');
 
-const socket = io(wsUrl, {
-  query: {
-    documentId: props.documentId
-  },
-  auth: {
-    token: authStore.token 
-  }
-});
-
-socket.emit('join-document', props.documentId);
-
-socket.on('sync-document', (fullState: ArrayBuffer) => {
-  Y.applyUpdate(ydoc, new Uint8Array(fullState));
-});
-
-ydoc.on('update', (update: Uint8Array) => {
-  socket.emit('crdt-update', { 
-    documentId: props.documentId, 
-    update 
-  });
-});
-
-socket.on('crdt-update', (update: ArrayBuffer) => {
-  Y.applyUpdate(ydoc, new Uint8Array(update));
-});
-
-// AWARENESS PER MULTI-CURSORI
-const getRandomColor = () => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-const awareness = new Awareness(ydoc);
-const provider = { awareness };
-
-socket.on('awareness-update', (update: ArrayBuffer) => {
-  awarenessProtocol.applyAwarenessUpdate(awareness, new Uint8Array(update), socket);
-});
-
-// Utenti attivi (escluso se stessi)
-const activeUsers = ref<string[]>([]);
-
-const updateActiveUsers = () => {
-  const states = awareness.getStates();
-  const names: string[] = [];
-  states.forEach((state, clientId) => {
-    if (clientId !== awareness.clientID && state?.user?.name) {
-      const name = state.user.name as string;
-      if (!names.includes(name)) {
-        names.push(name);
-      }
-    }
-  });
-  activeUsers.value = names;
-};
-
-awareness.on('update', ({ added, updated, removed }: any) => {
-  const changedClients = added.concat(updated, removed);
-  const update = awarenessProtocol.encodeAwarenessUpdate(awareness, changedClients);
-  socket.emit('awareness-update', { documentId: props.documentId, update });
-  updateActiveUsers();
-});
+const { ydoc, provider, activeUsers, getRandomColor } = useCollaboration(
+  props.documentId, 
+  wsUrl, 
+  authStore.token || undefined
+);
 
 defineExpose({ activeUsers });
 
@@ -100,14 +39,6 @@ const canEdit = computed(() => {
     (s.userId?._id || s.userId) === authStore.user?.id && s.role === 'editor'
   ) ?? false;
 });
-
-watch(canEdit, (newEditableState) => {
-  if (editor.value) {
-    editor.value.setEditable(newEditableState);
-  }
-});
-
-// Solo logic Tiptap ed Yjs di seguito:
 
 const editor = useEditor({
   editable: canEdit.value,
@@ -143,15 +74,12 @@ const editor = useEditor({
   },
 });
 
-onBeforeUnmount(() => {
-  if (socket) {
-    socket.emit('leave-document', props.documentId);
-    socket.disconnect();
-  }
-  if (ydoc) {
-    ydoc.destroy();
+watch(canEdit, (newEditableState) => {
+  if (editor.value) {
+    editor.value.setEditable(newEditableState);
   }
 });
+
 </script>
 
 <template>

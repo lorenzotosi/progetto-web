@@ -1,64 +1,32 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { api } from '../services/api';
 import Editor from '../components/editor/Editor.vue';
 import ShareDropdown from '../components/share/ShareDropdown.vue';
 import { useAuthStore } from '../stores/auth.store';
+import { useClickOutside } from '../composables/useClickOutside';
+import { useDocumentData } from '../composables/useDocumentData';
 
 const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const documentId = route.params.id as string;
 
-const documentData = ref<any>(null);
-const isLoading = ref(true);
 const editorRef = ref<any>(null);
 const viewersWrapperRef = ref<HTMLElement | null>(null);
 const showViewersDropdown = ref(false);
 
 const activeUsers = computed<string[]>(() => editorRef.value?.activeUsers ?? []);
 
-const fetchDocumentData = async () => {
-  try {
-    const response = await api.get(`/documents/${documentId}`);
-    documentData.value = response.data;
-  } catch (error) {
-    console.error("Errore nel caricamento del documento", error);
-    alert("Documento non trovato!");
-    router.push('/');
-  } finally {
-    isLoading.value = false;
-  }
-};
+const { documentData, isLoading, fetchDocumentData, handleRename } = useDocumentData(documentId);
 
-const handleOutsideClick = (e: MouseEvent) => {
-  if (viewersWrapperRef.value && !viewersWrapperRef.value.contains(e.target as Node)) {
-    showViewersDropdown.value = false;
-  }
-};
+useClickOutside(viewersWrapperRef, () => {
+  showViewersDropdown.value = false;
+});
 
 onMounted(async () => {
-  document.addEventListener('click', handleOutsideClick);
   await fetchDocumentData();
 });
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleOutsideClick);
-});
-
-const handleRename = async () => {
-  if (!documentData.value || !documentData.value.title.trim()) return;
-  
-  try {
-    await api.put('/documents/rename', {
-      id: documentId,
-      newTitle: documentData.value.title
-    });
-  } catch (error) {
-    console.error("Errore durante la rinomina del documento", error);
-  }
-};
 </script>
 
 <template>

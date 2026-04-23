@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useAuthStore } from '../../stores/auth.store';
 import AuthModal from '../auth/AuthModal.vue';
+import { useClickOutside } from '../../composables/useClickOutside';
 
 const authStore = useAuthStore();
 const isModalOpen = ref(false);
@@ -25,6 +26,13 @@ const showFolderInput = ref(false);
 const showDocInput = ref(false);
 const newFolderName = ref('');
 const newDocName = ref('');
+const menuRef = ref<HTMLElement | null>(null);
+
+useClickOutside(menuRef, () => {
+  showMenu.value = false;
+  showFolderInput.value = false;
+  showDocInput.value = false;
+});
 
 const handleCreateDoc = () => {
   if (newDocName.value.trim()) {
@@ -47,7 +55,7 @@ const handleCreateFolder = () => {
 
 <template>
   <aside class="sidebar">
-    <div v-if="authStore.isAuthenticated()" class="new-btn-wrapper">
+    <div v-if="authStore.isAuthenticated()" class="new-btn-wrapper" ref="menuRef">
       <button class="btn-nuovo" @click="showMenu = !showMenu" :disabled="activeSection === 'shared'">
         <span class="plus-icon">➕</span> Nuovo
       </button>

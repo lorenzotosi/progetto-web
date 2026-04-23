@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref } from 'vue';
 import { useDocumentStore } from '../../stores/document.stores';
+import { useClickOutside } from '../../composables/useClickOutside';
 
 const props = defineProps<{
   documentId: string;
@@ -41,14 +42,9 @@ const handleUpdateRole = async (email: string, newRole: 'viewer' | 'editor') => 
 };
 
 // Chiudi dropdown se clicchi fuori
-const handleClickOutside = (event: MouseEvent) => {
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
-    isDropdownVisible.value = false;
-  }
-};
-
-onMounted(() => document.addEventListener('mousedown', handleClickOutside));
-onUnmounted(() => document.removeEventListener('mousedown', handleClickOutside));
+useClickOutside(dropdownRef, () => {
+  isDropdownVisible.value = false;
+});
 </script>
 
 <template>
