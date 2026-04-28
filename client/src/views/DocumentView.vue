@@ -6,6 +6,7 @@ import ShareDropdown from '../components/share/ShareDropdown.vue';
 import ActiveViewers from '../components/editor/ActiveViewers.vue';
 import { useAuthStore } from '../stores/auth.store';
 import { useDocumentData } from '../composables/useDocumentData';
+import UserAvatar from "../components/common/UserAvatar.vue";
 
 const authStore = useAuthStore();
 const route = useRoute();
@@ -53,9 +54,7 @@ onMounted(async () => {
           @refresh="fetchDocumentData"
         />
 
-        <div class="avatar" title="Account User">
-          {{ authStore.user?.firstName?.[0] || 'U' }}
-        </div>
+        <UserAvatar :user="authStore.user" size="md" />
       </div>
     </header>
 
@@ -155,19 +154,6 @@ onMounted(async () => {
 
 .icon-btn:hover {
   background-color: rgba(0,0,0,0.05);
-}
-
-.avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: #1a73e8;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  cursor: pointer;
 }
 
 .editor-area {

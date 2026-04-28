@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useAuthStore } from '../../stores/auth.store';
 import AuthModal from '../auth/AuthModal.vue';
+import UserAvatar from "../common/UserAvatar.vue";
 
 const authStore = useAuthStore();
 const isModalOpen = ref(false);
@@ -37,12 +38,9 @@ const handleSearch = () => {
         <input v-model="searchQuery" type="text" placeholder="Cerca in Dok" @input="handleSearch"/>
       </div>
     </div>
-    <div class="actions">
-      <button class="icon-btn" title="Impostazioni">⚙️</button>
-    </div>
     <div class="user-section">
-      <div v-if="authStore.isAuthenticated()" class="avatar" @click="handleLogout">
-        <img src="/icons.svg#user" alt="User" />
+      <div v-if="authStore.isAuthenticated()" @click="handleLogout">
+        <UserAvatar :user="authStore.user" size="md" />
       </div>
       <button v-else class="login-trigger" @click="isModalOpen = true">
         Accedi
@@ -60,7 +58,7 @@ const handleSearch = () => {
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  background-color: transparent; /* Si adatta alla root */
+  background-color: transparent;
   border-bottom: 1px solid rgba(0,0,0,0.05);
   height: 64px;
 }
@@ -121,47 +119,6 @@ const handleSearch = () => {
 
 .search-bar input:focus {
   outline: none;
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 250px;
-  justify-content: flex-end;
-}
-
-.icon-btn {
-  background: transparent;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 18px;
-  cursor: pointer;
-  color: #5f6368;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s;
-}
-
-.icon-btn:hover {
-  background-color: rgba(0,0,0,0.05);
-}
-
-.avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background-color: #1a73e8;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  cursor: pointer;
-  margin-left: 12px;
 }
 
 .login-trigger {
