@@ -12,6 +12,7 @@ export interface IUser extends Document {
     role: UserRole;
     firstName: string;
     lastName: string;
+    lastSeen: Date;
     createdAt: Date;
     updatedAt: Date;
     comparePassword(candidatePassword: string): Promise<boolean>;
@@ -23,22 +24,20 @@ const userSchema = new Schema<IUser>(
         passwordHash: { type: String, required: true, select: false, maxLength: 72  }, // select: false evita che la password venga inviata di default nelle query
         role: { type: String, enum: Object.values(UserRole), default: UserRole.USER },
         firstName: { type: String, required: true, maxLength: 100 },
-        lastName: { type: String, required: true, maxLength: 100 }
+        lastName: { type: String, required: true, maxLength: 100 },
+        lastSeen: { type: Date, default: Date.now }
     },
     { timestamps: true }
 )
 
-// Hook pre-save per hashare la password se è stata modificata
 userSchema.pre('save', async function () {
     if (!this.isModified('passwordHash')) {
         return;
     }
-
     const salt = await bcrypt.genSalt(12);
     this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
 });
 
-// Metodo di istanza per verificare la password
 userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
     return bcrypt.compare(candidatePassword, this.passwordHash);
 };

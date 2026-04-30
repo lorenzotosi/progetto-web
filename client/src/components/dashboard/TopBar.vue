@@ -2,7 +2,6 @@
 import { ref } from 'vue';
 import { useAuthStore } from '../../stores/auth.store';
 import AuthModal from '../auth/AuthModal.vue';
-import UserAvatar from "../common/UserAvatar.vue";
 import UserMenu from "./UserMenu.vue";
 
 const authStore = useAuthStore();

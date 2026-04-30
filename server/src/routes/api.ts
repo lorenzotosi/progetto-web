@@ -4,11 +4,13 @@ import { createDoc, getDoc, getAllDocuments, deleteDocument, renameDocument, get
 import { requireBodyField, validateMongoIdParam } from '../middlewares/validation.middleware.js';
 import authRoutes from './auth.routes.js';
 import { requireAuth, optionalAuth } from '../middlewares/auth.middleware.js';
+import adminRoutes from "./admin.routes.js";
 
 const router = Router();
 
 //rotte in cu-el file di nome auth.routes
 router.use('/auth', authRoutes);
+router.use('/admin', adminRoutes);
 
 // Endpoint per le Cartelle
 router.post('/folders', requireAuth, requireBodyField('name'), createFolder); // Crea una cartella, 'name' obbligatorio

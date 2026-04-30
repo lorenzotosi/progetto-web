@@ -3,6 +3,7 @@ import * as Y from 'yjs';
 import Document from '../models/Document.js';
 import { activeDocuments } from './sync.types.js';
 import { TiptapTransformer } from '@hocuspocus/transformer';
+import { PresenceManager } from './presenceManager.js';
 
 const handleClientLeave = async (documentId: string) => {
   const state = activeDocuments.get(documentId);
@@ -34,6 +35,10 @@ const handleClientLeave = async (documentId: string) => {
 export const setupSockets = (io: Server) => {
   io.on('connection', (socket: Socket) => {
     console.log(`🟢 Nuovo client connesso: ${socket.id}`);
+    const userId = socket.handshake.auth?.userId;
+    if (userId) {
+      PresenceManager.addConnection(userId, socket.id);
+    }
     
     socket.on('join-document', async (documentId: string) => {
       socket.join(documentId);
@@ -109,6 +114,9 @@ export const setupSockets = (io: Server) => {
     });
 
     socket.on('disconnect', () => {
+      if (userId) {
+        PresenceManager.removeConnection(userId, socket.id);
+      }
       console.log(`🔴 Client disconnesso: ${socket.id}`);
     });
   });

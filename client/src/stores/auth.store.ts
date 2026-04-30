@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type {User} from "../types/user.types.ts";
+import {AuthClientService} from "../services/auth.service.ts";
 
 export const useAuthStore = defineStore('auth', () => {
     const token = ref<string | null>(localStorage.getItem('token'));
@@ -23,7 +24,14 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem('user', JSON.stringify(userData));
     };
 
-    const logout = () => {
+    const logout = async () => {
+        if (token.value) {
+            try {
+                await AuthClientService.logout();
+            } catch (error) {
+                console.error('[AuthStore] Errore API durante il logout:', error);
+            }
+        }
         token.value = null;
         user.value = null;
         localStorage.removeItem('token');

@@ -1,7 +1,7 @@
 //metto qui le rotte dell'autenticazione, dato che abbiamo una cartella
 //per le rotte tanto vale organizzarle in file diversi anziché tutte in uno
 import { Router, type Response} from 'express';
-import { register, login } from '../controllers/auth.controller.js';
+import {register, login, logout} from '../controllers/auth.controller.js';
 import { requireAuth, type AuthRequest} from '../middlewares/auth.middleware.js';
 
 const router = Router();
@@ -9,6 +9,7 @@ const router = Router();
 // Rotte Pubbliche
 router.post('/register', register);
 router.post('/login', login);
+router.post('/logout', requireAuth, logout);
 
 // Rotta Protetta (per testare che il token funzioni)
 // Qualsiasi rotta che usa requireAuth dovrà richiedere un JWT valido

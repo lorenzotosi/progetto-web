@@ -20,5 +20,9 @@ export const AuthClientService = {
             lastName
         });
         return response.data;
+    },
+
+    async logout(): Promise<void> {
+        await api.post('/auth/logout');
     }
 };

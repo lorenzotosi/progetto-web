@@ -1,6 +1,6 @@
-import type {Request, Response, NextFunction} from 'express';
+import type {NextFunction, Request, Response} from 'express';
 import jwt, {type JwtPayload} from 'jsonwebtoken';
-import { UserRole } from '../models/User.js';
+import {UserRole} from '../models/User.js';
 
 export interface AuthRequest extends Request {
     user?: { id: string; role: UserRole };
@@ -76,15 +76,9 @@ export const optionalAuth = (req: AuthRequest, res: Response, next: NextFunction
 };
 
 export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.user) {
-        res.status(401).json({ error: 'Utente non autenticato.' });
-        return;
-    }
-
-    if (req.user.role !== UserRole.ADMIN) {
+    if (!req.user || req.user.role !== UserRole.ADMIN) {
         res.status(403).json({ error: 'Accesso negato. Privilegi di amministratore richiesti.' });
         return;
     }
-
     next();
 };

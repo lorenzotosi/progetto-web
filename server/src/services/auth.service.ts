@@ -10,7 +10,7 @@ export interface AuthResponse {
         firstName: string;
         lastName: string;
     };
-    token: string; // JWT Token
+    token: string;
 }
 
 export class AuthService {
@@ -67,6 +67,7 @@ export class AuthService {
             throw new Error('Credenziali non valide');
         }
 
+        await UserModel.findByIdAndUpdate(user._id, { lastSeen: new Date() });
         const token = this.generateToken(user);
 
         return {

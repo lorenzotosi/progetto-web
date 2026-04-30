@@ -1,5 +1,7 @@
 import type { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service.js';
+import type {AuthRequest} from "../middlewares/auth.middleware.js";
+import {UserModel} from "../models/User.js";
 
 const authService = new AuthService();
 
@@ -30,5 +32,17 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         res.status(200).json(data);
     } catch (error: any) {
         res.status(401).json({ error: error.message });
+    }
+};
+
+export const logout = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const userId = req.user!.id;
+        await UserModel.findByIdAndUpdate(userId, { lastSeen: new Date() });
+
+        res.status(200).json({ message: 'Logout registrato con successo. Dati sincronizzati.' });
+    } catch (error) {
+        console.error('[AuthController] Errore durante il logout:', error);
+        res.status(500).json({ error: 'Errore interno durante il logout.' });
     }
 };
