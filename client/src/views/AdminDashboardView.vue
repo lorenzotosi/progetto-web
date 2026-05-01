@@ -92,7 +92,7 @@ onUnmounted(() => {
   min-height: 100vh;
   background-color: #1e1f22;
   padding: 40px 20px;
-  color: #f23f42; /* O il tuo colore di testo */
+  color: #f23f42;
 }
 
 .admin-header {
@@ -153,7 +153,7 @@ onUnmounted(() => {
 }
 
 .error-state {
-  color: #f23f42; /* Rosso per errori */
+  color: #f23f42;
   border: 1px solid #f23f42;
 }
 
