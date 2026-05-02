@@ -4,6 +4,10 @@ import Document from '../models/Document.js';
 import { activeDocuments } from './sync.types.js';
 import { TiptapTransformer } from '@hocuspocus/transformer';
 import { PresenceManager } from './presenceManager.js';
+import type {AuthPayload} from "../middlewares/auth.middleware.js";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-in-production';
 
 const handleClientLeave = async (documentId: string) => {
   const state = activeDocuments.get(documentId);
@@ -33,12 +37,50 @@ const handleClientLeave = async (documentId: string) => {
 };
 
 export const setupSockets = (io: Server) => {
+  PresenceManager.init(io);
+  io.use((socket: Socket, next) => {
+    const token = socket.handshake.auth?.token;
+
+    console.log(`[Socket Auth] Tentativo di connessione. Token ricevuto: ${token ? 'SI' : 'NO'}`);
+
+    if (!token) {
+      console.warn('[Socket Auth] Connessione rifiutata: Token mancante.');
+      return next(new Error('Autenticazione Socket fallita: Token mancante'));
+    }
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
+      socket.data.user = { id: decoded.id, role: decoded.role };
+      console.log(`[Socket Auth] Token valido. Utente ID decodificato: ${decoded.id}`);
+      next();
+    } catch (err: any) {
+      console.error(`[Socket Auth] Token NON valido: ${err.message}`);
+      return next(new Error('Autenticazione Socket fallita: Token non valido'));
+    }
+  });
+
   io.on('connection', (socket: Socket) => {
     console.log(`🟢 Nuovo client connesso: ${socket.id}`);
-    const userId = socket.handshake.auth?.userId;
+
+    const userId = socket.data.user?.id;
+    const userRole = socket.data.user?.role;
     if (userId) {
       PresenceManager.addConnection(userId, socket.id);
+      console.log(`[Presence] Stato interno aggiornato per UserID: ${userId}`);
     }
+
+    socket.on('join_admin_dashboard', () => {
+      if (userRole === 'ADMIN') {
+        socket.join('admin:dashboard');
+        console.log(`[ACL] Admin ${userId} iscritto agli aggiornamenti real-time.`);
+      } else {
+        console.warn(`[ACL] Utente ${userId} ha tentato di iscriversi come Admin senza permessi.`);
+      }
+    });
+
+    socket.on('leave_admin_dashboard', () => {
+      socket.leave('admin:dashboard');
+    });
     
     socket.on('join-document', async (documentId: string) => {
       socket.join(documentId);
@@ -113,7 +155,8 @@ export const setupSockets = (io: Server) => {
       }
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason) => {
+      console.log(`[Socket.io] Utente DISCONNESSO. SocketID: ${socket.id}. Motivo: ${reason}`);
       if (userId) {
         PresenceManager.removeConnection(userId, socket.id);
       }

@@ -3,9 +3,13 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import connectDB from './config/db.js';
 import { setupSockets } from './sockets/index.js';
-import { app } from './app.js'; // Importiamo l'app pulita
+import { app } from './app.js';
+import {connectRedis} from "./config/redis.js"; // Importiamo l'app pulita
 
 const PORT = process.env.PORT || 3000;
+
+// connessione a redis
+await connectRedis();
 
 //connessione al database
 connectDB();

@@ -3,14 +3,13 @@ import {ref, onMounted, onUnmounted} from 'vue';
 import AdminUserRow from '../components/admin/AdminUserRow.vue';
 import { AdminService, type AdminDashboardUser } from '../services/admin.service';
 import { useRouter } from 'vue-router';
+import {socketService} from "../services/socket.service.ts";
 
 const router = useRouter();
 
 const users = ref<AdminDashboardUser[]>([]);
 const isLoading = ref(true);
 const errorMessage = ref<string | null>(null);
-
-let pollingInterval: number | null = null;
 
 const navigateBack = () => {
   router.push('/');
@@ -31,14 +30,29 @@ const fetchUsers = async () => {
 onMounted(() => {
   fetchUsers();
 
-  // Architettura Distribuita: Polling a bassa frequenza (qui ogni 30 secondi)
-  // per aggiornare lo stato di presenza se l'amministratore lascia la dashboard aperta.
-  // In un sistema avanzato, questo si farebbe via WebSocket (es. sottoscrizione a una room 'admin-updates'). Da chiedere a Gemini
-  pollingInterval = window.setInterval(fetchUsers, 30000);
+  const socket = socketService.getSocket();
+  if (socket) {
+    socket.emit('join_admin_dashboard');
+    socket.on('presence_update', (data: { userId: string, isOnline: boolean, lastSeen?: string }) => {
+
+      const targetUser = users.value.find(u => u.id === data.userId);
+
+      if (targetUser) {
+        targetUser.isOnline = data.isOnline;
+        if (data.lastSeen) {
+          targetUser.lastSeen = data.lastSeen;
+        }
+      }
+    });
+  }
 });
 
 onUnmounted(() => {
-  if (pollingInterval) window.clearInterval(pollingInterval);
+  const socket = socketService.getSocket();
+  if (socket) {
+    socket.emit('leave_admin_dashboard');
+    socket.off('presence_update');
+  }
 });
 </script>
 
