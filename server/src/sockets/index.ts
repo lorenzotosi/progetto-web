@@ -6,6 +6,8 @@ import { TiptapTransformer } from '@hocuspocus/transformer';
 import { PresenceManager } from './presenceManager.js';
 import type {AuthPayload} from "../middlewares/auth.middleware.js";
 import jwt from "jsonwebtoken";
+import {redisClient} from "../config/redis.js";
+import {createAdapter} from "@socket.io/redis-adapter";
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-in-production';
 
@@ -36,11 +38,17 @@ const handleClientLeave = async (documentId: string) => {
   }
 };
 
-export const setupSockets = (io: Server) => {
+export const setupSockets = async (io: Server) => {
+  const pubClient = redisClient.duplicate();
+  const subClient = redisClient.duplicate();
+
+  await Promise.all([pubClient.connect(), subClient.connect()]);
+  io.adapter(createAdapter(pubClient, subClient));
+
   PresenceManager.init(io);
+
   io.use((socket: Socket, next) => {
     const token = socket.handshake.auth?.token;
-
     console.log(`[Socket Auth] Tentativo di connessione. Token ricevuto: ${token ? 'SI' : 'NO'}`);
 
     if (!token) {
@@ -69,10 +77,11 @@ export const setupSockets = (io: Server) => {
       console.log(`[Presence] Stato interno aggiornato per UserID: ${userId}`);
     }
 
-    socket.on('join_admin_dashboard', () => {
+    socket.on('join_admin_dashboard', (callback?: () => void) => {
       if (userRole === 'ADMIN') {
         socket.join('admin:dashboard');
         console.log(`[ACL] Admin ${userId} iscritto agli aggiornamenti real-time.`);
+        if (callback) callback();
       } else {
         console.warn(`[ACL] Utente ${userId} ha tentato di iscriversi come Admin senza permessi.`);
       }

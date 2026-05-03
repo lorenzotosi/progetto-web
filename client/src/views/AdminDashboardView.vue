@@ -28,24 +28,35 @@ const fetchUsers = async () => {
 };
 
 onMounted(() => {
-  fetchUsers();
-
   const socket = socketService.getSocket();
-  if (socket) {
-    socket.emit('join_admin_dashboard');
-    socket.on('presence_update', (data: { userId: string, isOnline: boolean, lastSeen?: string }) => {
 
-      const targetUser = users.value.find(u => u.id === data.userId);
-
-      if (targetUser) {
-        targetUser.isOnline = data.isOnline;
-        if (data.lastSeen) {
-          targetUser.lastSeen = data.lastSeen;
-        }
-      }
+  if (socket && socket.connected) {
+    bootstrapDashboard(socket);
+  } else if (socket) {
+    socket.on('connect', () => {
+      bootstrapDashboard(socket);
     });
+  } else {
+    fetchUsers();
   }
 });
+
+const bootstrapDashboard = (socket: any) => {
+  socket.emit('join_admin_dashboard', () => {
+    fetchUsers();
+  });
+
+  socket.on('presence_update', (data: { userId: string, isOnline: boolean, lastSeen?: string }) => {
+    const index = users.value.findIndex(u => u.id === data.userId);
+    if (index !== -1) {
+      users.value[index] = {
+        ...users.value[index],
+        isOnline: data.isOnline,
+        ...(data.lastSeen && { lastSeen: data.lastSeen })
+      };
+    }
+  });
+};
 
 onUnmounted(() => {
   const socket = socketService.getSocket();

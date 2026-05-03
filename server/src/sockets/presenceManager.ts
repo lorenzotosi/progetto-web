@@ -34,24 +34,32 @@ export const PresenceManager = {
             const key = `user_sockets:${userId}`;
             await redisClient.sRem(key, socketId);
 
-            const remainingSockets = await redisClient.sCard(key);
-            if (remainingSockets === 0) {
-                const now = new Date();
-                await UserModel.findByIdAndUpdate(userId, { lastSeen: now });
+            setTimeout(async () => {
+                try {
+                    const remainingSockets = await redisClient.sCard(key);
 
-                if (ioInstance) {
-                    ioInstance.to('admin:dashboard').emit('presence_update', {
-                        userId,
-                        isOnline: false,
-                        lastSeen: now.toISOString()
-                    });
+                    if (remainingSockets === 0) {
+                        const now = new Date();
+                        await UserModel.findByIdAndUpdate(userId, { lastSeen: now });
+
+                        if (ioInstance) {
+                            ioInstance.to('admin:dashboard').emit('presence_update', {
+                                userId,
+                                isOnline: false,
+                                lastSeen: now.toISOString()
+                            });
+                        }
+                        console.log(`[Presence] Utente ${userId} è definitivamente offline.`);
+                    } else {
+                        console.log(`[Presence] Disconnessione annullata per ${userId} (Network Flap gestito).`);
+                    }
+                } catch (err) {
+                    console.error(`[Presence] Errore nel Grace Period per ${userId}:`, err);
                 }
-                await redisClient.del(key);
-            } else {
-                console.log(`[Presence] (Redis) Rimosso Socket ${socketId}. Connessioni rimanenti per User ${userId}: ${remainingSockets}`);
-            }
+            }, 3000);
+
         } catch (error) {
-            console.error(`[Presence Error] (Redis) Fallita removeConnection:`, error);
+            console.error(`[Presence] Redis Error:`, error);
         }
     },
 
