@@ -63,6 +63,7 @@ export const setupSockets = async (io: Server) => {
       const decoded = jwt.verify(token, JWT_SECRET) as AuthPayload;
       socket.data.user = { id: decoded.id, role: decoded.role };
       console.log(`[Socket Auth] Token valido. Utente ID decodificato: ${decoded.id}`);
+
       next();
     } catch (err: any) {
       console.error(`[Socket Auth] Token NON valido: ${err.message}`);
@@ -75,7 +76,10 @@ export const setupSockets = async (io: Server) => {
 
     const userId = socket.data.user?.id;
     const userRole = socket.data.user?.role;
+
     if (userId) {
+      socket.join(`user:${userId}`);
+      console.log(`[Socket] Utente ${userId} iscritto alla stanza privata: user:${userId}`);
       PresenceManager.addConnection(userId, socket.id);
       console.log(`[Presence] Stato interno aggiornato per UserID: ${userId}`);
     }
@@ -186,6 +190,7 @@ export const setupSockets = async (io: Server) => {
 
     socket.on('join-shared-dashboard', () => {
       socket.join('shared-dashboard');
+      console.log(`[Real-time] Utente ${socket.id} monitora la dashboard condivisa`);
     });
 
   });
