@@ -84,8 +84,14 @@ export const deleteDocument = async (req: AuthRequest, res: Response) => {
         if (io) {
             if (isPublic) {
                 io.to('global-dashboard').emit('global-document-deleted', documentId);
-            } else {
-
+            }
+            
+            // Notifica tutti i collaboratori dell'eliminazione
+            if (doc.sharedWith && doc.sharedWith.length > 0) {
+                doc.sharedWith.forEach((share: any) => {
+                    const collaboratorId = share.userId._id || share.userId;
+                    io.to(`user:${collaboratorId.toString()}`).emit('document-deleted', documentId);
+                });
             }
         }
         res.status(200).json(docOk)
@@ -111,17 +117,22 @@ export const renameDocument = async (req: AuthRequest, res: Response) => {
         }
 
         const updatedDoc = await DocumentService.renameDocument(id, newTitle);
-        if (io) {
-            if (updatedDoc?.visibility === 'public') {
+        if (io && updatedDoc) {
+            // Se pubblico, aggiorna la dashboard globale
+            if (updatedDoc.visibility === 'public') {
                 io.to('global-dashboard').emit('global-document-renamed', updatedDoc);
-            } else if (updatedDoc?.visibility === 'private') {
-                //io.to(`private-dashboard-${userId}`).emit('document-renamed', updatedDoc);
-            } else if (updatedDoc?.visibility === 'shared') {
-                /*const usersInvolved = [...updatedDoc.sharedWith.keys()];
-                usersInvolved.forEach(userId => {
-                    io.to(`shared-dashboard-${userId}`).emit('document-renamed', updatedDoc);
-                });*/
-                //TODO
+            }
+
+            // Notifica tutti i collaboratori della rinomina (indipendentemente dalla visibilità)
+            if (updatedDoc.sharedWith && updatedDoc.sharedWith.length > 0) {
+                updatedDoc.sharedWith.forEach((share: any) => {
+                    const collaboratorId = share.userId._id || share.userId;
+                    // Inviamo l'oggetto con myRole specifico per quel collaboratore
+                    io.to(`user:${collaboratorId.toString()}`).emit('document-renamed', {
+                        ...updatedDoc.toObject(),
+                        myRole: share.role
+                    });
+                });
             }
         }
         res.status(200).json(updatedDoc);
@@ -174,9 +185,15 @@ export const shareDoc = async (req: AuthRequest, res: Response) => {
 
         const io = req.app.get('io');
         if (io && docForNotify) {
-            io.to(`user:${userId}`).emit('document-shared', {
-                ...docForNotify,
-                myRole: role
+            // Notifichiamo TUTTI gli utenti con cui il file è condiviso
+            // Ognuno deve ricevere l'oggetto con il PROPRIO ruolo specifico
+            docForNotify.sharedWith.forEach((share: any) => {
+                const collaboratorId = share.userId._id || share.userId;
+                
+                io.to(`user:${collaboratorId.toString()}`).emit('document-shared', {
+                    ...docForNotify,
+                    myRole: share.role
+                });
             });
         }
         res.json(updatedDoc);

@@ -69,6 +69,16 @@ export function useDashboardSockets(currentSection: Ref<'private' | 'public' | '
     }
   };
 
+  const handleDocumentDeleted = (deletedId: string) => {
+    documentStore.documents = documentStore.documents.filter(d => d._id !== deletedId);
+  };
+
+  const handleDocumentRenamed = (updatedDoc: any) => {
+    documentStore.documents = documentStore.documents.map(d =>
+      d._id === updatedDoc._id ? updatedDoc : d
+    );
+  };
+
   const clearAllListeners = (socket: any) => {
     if (!socket) return;
     socket.off('global-document-created');
@@ -79,14 +89,14 @@ export function useDashboardSockets(currentSection: Ref<'private' | 'public' | '
     socket.off('global-folder-deleted');
     socket.off('document-shared');
     socket.off('document-unshared');
+    socket.off('document-deleted');
+    socket.off('document-renamed');
   };
 
   const registerListeners = (socket: any) => {
     if (currentSection.value === 'public') {
       socket.emit('join-public-dashboard');
       socket.on('global-document-created', handleGlobalDocumentCreated);
-    } else if (currentSection.value === 'shared') {
-      // Per ora non serve una stanza specifica perché usiamo la stanza user:ID
     }
 
     // Eventi globali o personali che possono avvenire in background
@@ -98,6 +108,8 @@ export function useDashboardSockets(currentSection: Ref<'private' | 'public' | '
     // Ascolta sempre se qualcuno condivide qualcosa con te (stanza user:ID)
     socket.on('document-shared', handleDocumentShared);
     socket.on('document-unshared', handleDocumentUnshared);
+    socket.on('document-deleted', handleDocumentDeleted);
+    socket.on('document-renamed', handleDocumentRenamed);
   };
 
   const setupSocketSync = () => {
