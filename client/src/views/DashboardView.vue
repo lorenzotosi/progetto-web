@@ -36,6 +36,12 @@ const setupSocketSync = () => {
     //socket.emit('join-shared-dashboard');
     //todo
   }
+
+  socket.off('global-document-deleted');
+  socket.on('global-document-deleted', (deletedId) => {
+    documentStore.documents = documentStore.documents.filter(d => d._id !== deletedId);
+  });
+
 };
 
 watch(currentSection, () => {
@@ -47,6 +53,7 @@ onUnmounted(() => {
   if (socket) {
     socket.off('global-document-created');
     socket.off('document-created');
+    socket.off('global-document-deleted');
   }
 });
 

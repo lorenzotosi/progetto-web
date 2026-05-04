@@ -64,6 +64,8 @@ export const deleteDocument = async (req: AuthRequest, res: Response) => {
         const documentId = req.params.id as string
         const ownerId = req.user!.id;
         const doc = await DocumentService.getDocumentById(documentId);
+        const io = req.app.get('io');
+        const isPublic = doc?.visibility === 'public';
         //console.log(doc)
         //console.log(ownerId)
         if (!doc) {
@@ -78,6 +80,13 @@ export const deleteDocument = async (req: AuthRequest, res: Response) => {
         }
         const docOk = await DocumentService.deleteDocument(documentId)
         //console.log('Documento eliminato')
+        if (io){
+            if (isPublic){
+                io.to('global-dashboard').emit('global-document-deleted', documentId);
+            } else {
+
+            }
+        }
         res.status(200).json(docOk)
     } catch (error) {
         res.status(500).json({ error: 'Errore eliminazione documento' })
