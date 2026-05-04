@@ -79,6 +79,14 @@ export function useDashboardSockets(currentSection: Ref<'private' | 'public' | '
     );
   };
 
+  const handlePrivateDocumentCreated = (doc: any) => {
+    documentStore.documents.unshift(doc);
+  };
+
+  const handlePrivateDocumentDeleted = (documentId: string) => {
+    documentStore.documents = documentStore.documents.filter(d => d._id !== documentId);
+  };
+
   const clearAllListeners = (socket: any) => {
     if (!socket) return;
     socket.off('global-document-created');
@@ -91,6 +99,7 @@ export function useDashboardSockets(currentSection: Ref<'private' | 'public' | '
     socket.off('document-unshared');
     socket.off('document-deleted');
     socket.off('document-renamed');
+    socket.off('private-document-created');
   };
 
   const registerListeners = (socket: any) => {
@@ -110,6 +119,8 @@ export function useDashboardSockets(currentSection: Ref<'private' | 'public' | '
     socket.on('document-unshared', handleDocumentUnshared);
     socket.on('document-deleted', handleDocumentDeleted);
     socket.on('document-renamed', handleDocumentRenamed);
+    socket.on('private-document-created', handlePrivateDocumentCreated);
+    socket.on('private-document-deleted', handlePrivateDocumentDeleted);
   };
 
   const setupSocketSync = () => {

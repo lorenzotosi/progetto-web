@@ -16,7 +16,7 @@ export const createDoc = async (req: AuthRequest, res: Response) => {
             if (visibility === 'public') {
                 io.to('global-dashboard').emit('global-document-created', doc);
             } else {
-                // TODO
+                io.to(`user:${ownerId}`).emit('private-document-created', doc);
             }
         }
 
@@ -84,8 +84,10 @@ export const deleteDocument = async (req: AuthRequest, res: Response) => {
         if (io) {
             if (isPublic) {
                 io.to('global-dashboard').emit('global-document-deleted', documentId);
+            } else {
+                io.to(`user:${ownerId}`).emit('private-document-deleted', documentId);
             }
-            
+
             // Notifica tutti i collaboratori dell'eliminazione
             if (doc.sharedWith && doc.sharedWith.length > 0) {
                 doc.sharedWith.forEach((share: any) => {
