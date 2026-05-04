@@ -97,8 +97,7 @@ export const renameDocument = async (req: AuthRequest, res: Response) => {
     try {
         const { id, newTitle } = req.body;
         const userId = req.user!.id;
-        //console.log(newTitle)
-
+        const io = req.app.get('io');
         const doc = await DocumentService.getDocumentById(id);
         if (!doc) {
             res.status(404).json({ error: 'Documento non trovato' });
@@ -111,7 +110,19 @@ export const renameDocument = async (req: AuthRequest, res: Response) => {
         }
 
         const updatedDoc = await DocumentService.renameDocument(id, newTitle);
-        //console.log(updatedDoc)
+        if (io) {
+            if (updatedDoc?.visibility === 'public') {
+                io.to('global-dashboard').emit('global-document-renamed', updatedDoc);
+            } else if (updatedDoc?.visibility === 'private') {
+                //io.to(`private-dashboard-${userId}`).emit('document-renamed', updatedDoc);
+            } else if (updatedDoc?.visibility === 'shared') {
+                /*const usersInvolved = [...updatedDoc.sharedWith.keys()];
+                usersInvolved.forEach(userId => {
+                    io.to(`shared-dashboard-${userId}`).emit('document-renamed', updatedDoc);
+                });*/
+                //TODO
+            }
+        }
         res.status(200).json(updatedDoc);
     } catch (error) {
         console.error("Errore rinomina documento:", error);

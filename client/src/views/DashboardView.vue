@@ -42,6 +42,11 @@ const setupSocketSync = () => {
     documentStore.documents = documentStore.documents.filter(d => d._id !== deletedId);
   });
 
+  socket.off('global-document-renamed');
+  socket.on('global-document-renamed', (updatedDoc) => {
+    documentStore.documents = documentStore.documents.map(d => d._id === updatedDoc._id ? updatedDoc : d);
+  });
+
 };
 
 watch(currentSection, () => {
@@ -54,6 +59,7 @@ onUnmounted(() => {
     socket.off('global-document-created');
     socket.off('document-created');
     socket.off('global-document-deleted');
+    socket.off('global-document-renamed');
   }
 });
 
