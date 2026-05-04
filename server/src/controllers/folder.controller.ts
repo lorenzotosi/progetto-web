@@ -59,9 +59,17 @@ export const deleteFolder = async (req: AuthRequest, res: Response) => {
             return;
         }
 
-        log("folderId da eliminare:", folderId);
+        //log("folderId da eliminare:", folderId);
         await FolderService.deleteFolder(folderId);
-        log("folder eliminato:", folderId);
+        //log("folder eliminato:", folderId);
+        const io = req.app.get('io');
+        if (io) {
+            if (folderToDelete.visibility === 'public') {
+                io.to('global-dashboard').emit('global-folder-deleted', folderId);
+            } else {
+                // TODO: implementare eliminazione cartella privata
+            }
+        }
         res.json(folderId);
     } catch (error) {
         console.error("Errore eliminazione cartella:", error);

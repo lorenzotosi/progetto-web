@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useFolderStore } from '../stores/folder.store';
 import { useDocumentStore } from '../stores/document.stores';
 import { useAuthStore } from '../stores/auth.store';
@@ -7,7 +7,7 @@ import TopBar from '../components/dashboard/TopBar.vue';
 import SideBar from '../components/dashboard/SideBar.vue';
 import MainWorkspace from '../components/dashboard/MainWorkspace.vue';
 import { useFolderNavigation } from '../composables/useFolderNavigation';
-import { socketService } from '../services/socket.service';
+import { useDashboardSockets } from '../composables/useDashboardSockets';
 
 const folderStore = useFolderStore();
 const documentStore = useDocumentStore();
@@ -15,60 +15,8 @@ const authStore = useAuthStore();
 const currentSection = ref<'private' | 'public' | 'shared'>('private');
 const searchQuery = ref('');
 
-const setupSocketSync = () => {
-
-  if (!socketService.getSocket()) {
-    socketService.connect(authStore.token || null);
-  }
-
-  const socket = socketService.getSocket();
-  if (!socket) return;
-  socket.off('global-document-created');
-  socket.off('document-created');
-  if (currentSection.value === 'public') {
-    socket.emit('join-public-dashboard');
-    socket.on('global-document-created', (doc) => {
-      if (!documentStore.documents.find(d => d._id === doc._id)) {
-        documentStore.documents.unshift(doc);
-      }
-    });
-  } else if (currentSection.value === 'shared') {
-    //socket.emit('join-shared-dashboard');
-    //todo
-  }
-
-  socket.off('global-document-deleted');
-  socket.on('global-document-deleted', (deletedId) => {
-    documentStore.documents = documentStore.documents.filter(d => d._id !== deletedId);
-  });
-
-  socket.off('global-document-renamed');
-  socket.on('global-document-renamed', (updatedDoc) => {
-    documentStore.documents = documentStore.documents.map(d => d._id === updatedDoc._id ? updatedDoc : d);
-  });
-
-  socket.off('global-folder-created');
-  socket.on('global-folder-created', (newFolder) => {
-    if (!folderStore.folders.find(f => f._id === newFolder._id)) {
-      folderStore.folders.unshift(newFolder);
-    }
-  });
-};  
-
-watch(currentSection, () => {
-  setupSocketSync();
-}, { immediate: true }); 
-
-onUnmounted(() => {
-  const socket = socketService.getSocket();
-  if (socket) {
-    socket.off('global-document-created');
-    socket.off('document-created');
-    socket.off('global-document-deleted');
-    socket.off('global-document-renamed');
-    socket.off('global-folder-created');
-  }
-});
+// Inizializza i socket per la dashboard passando la sezione corrente
+useDashboardSockets(currentSection);
 
 const refreshData = () => {
   if (currentSection.value === 'shared') {
