@@ -68,7 +68,7 @@ export class DocumentService {
     }
 
     static async renameDocument(id: string, newTitle: string) {
-        return await Document.findByIdAndUpdate(id, { title: newTitle }, { new: true });
+        return await Document.findByIdAndUpdate(id, { title: newTitle }, { returnDocument: 'after' });
     }
 
     static async getSharedDocuments(userId: string) {
@@ -90,7 +90,7 @@ export class DocumentService {
         const updated = await Document.findOneAndUpdate(
             { _id: id, 'sharedWith.userId': userId },
             { $set: { 'sharedWith.$.role': role } },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if (updated) return updated;
@@ -98,11 +98,11 @@ export class DocumentService {
         return await Document.findByIdAndUpdate(
             id,
             { $push: { sharedWith: { userId, role } } },
-            { new: true }
+            { returnDocument: 'after' }
         );
     }
 
     static async unshareDocument(id: string, userId: string) {
-        return await Document.findByIdAndUpdate(id, { $pull: { sharedWith: { userId } } }, { new: true });
+        return await Document.findByIdAndUpdate(id, { $pull: { sharedWith: { userId } } }, { returnDocument: 'after' });
     }
 }
