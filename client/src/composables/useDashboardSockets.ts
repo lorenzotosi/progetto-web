@@ -100,6 +100,7 @@ export function useDashboardSockets(currentSection: Ref<'private' | 'public' | '
     socket.off('document-deleted');
     socket.off('document-renamed');
     socket.off('private-document-created');
+    socket.off('private-document-deleted');
   };
 
   const registerListeners = (socket: any) => {
