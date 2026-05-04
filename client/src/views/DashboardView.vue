@@ -47,7 +47,13 @@ const setupSocketSync = () => {
     documentStore.documents = documentStore.documents.map(d => d._id === updatedDoc._id ? updatedDoc : d);
   });
 
-};
+  socket.off('global-folder-created');
+  socket.on('global-folder-created', (newFolder) => {
+    if (!folderStore.folders.find(f => f._id === newFolder._id)) {
+      folderStore.folders.unshift(newFolder);
+    }
+  });
+};  
 
 watch(currentSection, () => {
   setupSocketSync();
@@ -60,6 +66,7 @@ onUnmounted(() => {
     socket.off('document-created');
     socket.off('global-document-deleted');
     socket.off('global-document-renamed');
+    socket.off('global-folder-created');
   }
 });
 

@@ -7,7 +7,11 @@ export const createFolder = async (req: AuthRequest, res: Response) => {
     try {
         const { name, parentId, visibility } = req.body;
         const ownerId = req.user!.id;
+        const io = req.app.get('io');
         const folder = await FolderService.createFolder(name, ownerId, parentId, visibility);
+        if (folder.visibility === 'public') {
+            io.to('global-dashboard').emit('global-folder-created', folder);
+        }
         res.status(201).json(folder);
     } catch (error) {
         console.error("Errore creazione cartella:", error);
@@ -44,7 +48,7 @@ export const deleteFolder = async (req: AuthRequest, res: Response) => {
         const userId = req.user!.id;
 
         const folderToDelete = await FolderService.getFolderById(folderId);
-        
+
         if (!folderToDelete) {
             res.status(404).json({ error: 'Cartella non trovata' });
             return;
