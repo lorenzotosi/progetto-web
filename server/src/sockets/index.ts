@@ -4,10 +4,10 @@ import Document from '../models/Document.js';
 import { activeDocuments } from './sync.types.js';
 import { TiptapTransformer } from '@hocuspocus/transformer';
 import { PresenceManager } from './presenceManager.js';
-import type {AuthPayload} from "../middlewares/auth.middleware.js";
+import type { AuthPayload } from "../middlewares/auth.middleware.js";
 import jwt from "jsonwebtoken";
-import {redisClient} from "../config/redis.js";
-import {createAdapter} from "@socket.io/redis-adapter";
+import { redisClient } from "../config/redis.js";
+import { createAdapter } from "@socket.io/redis-adapter";
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-change-in-production';
 
@@ -24,7 +24,7 @@ const handleClientLeave = async (documentId: string) => {
     try {
       const finalBinaryState = Y.encodeStateAsUpdate(state.ydoc);
       const tiptapJson = TiptapTransformer.fromYdoc(state.ydoc, 'default' /*, [StarterKit] */);
-      await Document.findByIdAndUpdate(documentId, { 
+      await Document.findByIdAndUpdate(documentId, {
         yjsState: Buffer.from(finalBinaryState),
         tiptapJson: tiptapJson
       });
@@ -53,7 +53,7 @@ export const setupSockets = async (io: Server) => {
 
     if (!token) {
       console.warn('[Socket Auth] Connessione rifiutata: Token mancante.');
-      socket.data.user = { id: null, role: 'GUEST' };
+      socket.data.user = { id: null, role: 'USER' };
       //return next(new Error('Autenticazione Socket fallita: Token mancante'));
       console.log("[Socket Auth] Utente GUEST connesso.");
       return next();
@@ -93,7 +93,7 @@ export const setupSockets = async (io: Server) => {
     socket.on('leave_admin_dashboard', () => {
       socket.leave('admin:dashboard');
     });
-    
+
     socket.on('join-document', async (documentId: string) => {
       socket.join(documentId);
 
@@ -106,7 +106,7 @@ export const setupSockets = async (io: Server) => {
         }
 
         const ydoc = new Y.Doc();
-        
+
         if (dbDoc && dbDoc.yjsState && dbDoc.yjsState.length > 0) {
           Y.applyUpdate(ydoc, new Uint8Array(dbDoc.yjsState));
         }
@@ -134,12 +134,12 @@ export const setupSockets = async (io: Server) => {
       socket.to(documentId).emit('crdt-update', update);
 
       if (state.saveTimeout) clearTimeout(state.saveTimeout);
-      
+
       state.saveTimeout = setTimeout(async () => {
         try {
           const binaryState = Y.encodeStateAsUpdate(state.ydoc);
           const tiptapJson = TiptapTransformer.fromYdoc(state.ydoc, 'default');
-          await Document.findByIdAndUpdate(documentId, { 
+          await Document.findByIdAndUpdate(documentId, {
             yjsState: Buffer.from(binaryState),
             tiptapJson: tiptapJson
           });
@@ -147,7 +147,7 @@ export const setupSockets = async (io: Server) => {
         } catch (error) {
           console.error("Errore salvataggio debounced:", error);
         }
-      }, 3000); 
+      }, 3000);
     });
 
     //multi cursor

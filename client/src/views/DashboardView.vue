@@ -16,6 +16,11 @@ const currentSection = ref<'private' | 'public' | 'shared'>('private');
 const searchQuery = ref('');
 
 const setupSocketSync = () => {
+
+  if (!socketService.getSocket()) {
+    socketService.connect(authStore.token || null);
+  }
+
   const socket = socketService.getSocket();
   if (!socket) return;
   socket.off('global-document-created');

@@ -3,11 +3,11 @@ import { io, Socket } from 'socket.io-client';
 class SocketClientService {
     private socket: Socket | null = null;
 
-    connect(token: string): void {
+    connect(token?: string | null): void {
         if (this.socket?.connected) return;
 
         this.socket = io('http://localhost:3000', {
-            auth: { token },
+            auth: { token: token || null },
             transports: ['websocket'],
             reconnectionAttempts: 5,
             reconnectionDelay: 1000

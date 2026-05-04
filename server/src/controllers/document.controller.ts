@@ -64,8 +64,8 @@ export const deleteDocument = async (req: AuthRequest, res: Response) => {
         const documentId = req.params.id as string
         const ownerId = req.user!.id;
         const doc = await DocumentService.getDocumentById(documentId);
-        console.log(doc)
-        console.log(ownerId)
+        //console.log(doc)
+        //console.log(ownerId)
         if (!doc) {
             console.log('Documento non trovato')
             res.status(404).json({ error: 'Documento non trovato' });
