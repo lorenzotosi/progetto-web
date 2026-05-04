@@ -2,6 +2,7 @@ import { type Request, type Response } from 'express';
 import { DocumentService } from '../services/document.service.js';
 import { type AuthRequest } from '../middlewares/auth.middleware.js';
 import { UserModel } from '../models/User.js';
+import Document from '../models/Document.js';
 
 
 export const createDoc = async (req: AuthRequest, res: Response) => {
@@ -9,7 +10,7 @@ export const createDoc = async (req: AuthRequest, res: Response) => {
         const { title, folderId, visibility } = req.body;
         const ownerId = req.user!.id;
         const doc = await DocumentService.createDocument(title || 'Documento Senza Titolo', ownerId, folderId, visibility);
-        
+
         const io = req.app.get('io');
         if (io) {
             if (visibility === 'public') {
@@ -80,8 +81,8 @@ export const deleteDocument = async (req: AuthRequest, res: Response) => {
         }
         const docOk = await DocumentService.deleteDocument(documentId)
         //console.log('Documento eliminato')
-        if (io){
-            if (isPublic){
+        if (io) {
+            if (isPublic) {
                 io.to('global-dashboard').emit('global-document-deleted', documentId);
             } else {
 
@@ -165,6 +166,19 @@ export const shareDoc = async (req: AuthRequest, res: Response) => {
         }
 
         const updatedDoc = await DocumentService.shareDocument(id, userId, role);
+
+        // Prepariamo l'oggetto per il real-time aggiungendo myRole e popolando ownerId
+        const docForNotify = await Document.findById(id)
+            .populate('ownerId', 'firstName lastName')
+            .lean();
+
+        const io = req.app.get('io');
+        if (io && docForNotify) {
+            io.to(`user:${userId}`).emit('document-shared', {
+                ...docForNotify,
+                myRole: role
+            });
+        }
         res.json(updatedDoc);
     } catch (error) {
         res.status(500).json({ error: 'Errore condivisione documento' });
@@ -184,6 +198,10 @@ export const unshareDoc = async (req: AuthRequest, res: Response) => {
         }
 
         const updatedDoc = await DocumentService.unshareDocument(id, userId);
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`user:${userId}`).emit('document-unshared', id);
+        }
         res.json(updatedDoc);
     } catch (error) {
         res.status(500).json({ error: 'Errore rimozione condivisione' });

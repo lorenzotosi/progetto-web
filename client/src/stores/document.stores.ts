@@ -6,7 +6,9 @@ export interface IDocument {
     _id: string;
     title: string;
     folderId: string | null;
+    ownerId: any; 
     visibility: 'private' | 'public';
+    myRole?: 'editor' | 'viewer' | null;
     yjsState: any;
     tiptapJson: Record<string, any>;
     createdAt?: string;
