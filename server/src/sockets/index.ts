@@ -53,7 +53,10 @@ export const setupSockets = async (io: Server) => {
 
     if (!token) {
       console.warn('[Socket Auth] Connessione rifiutata: Token mancante.');
-      return next(new Error('Autenticazione Socket fallita: Token mancante'));
+      socket.data.user = { id: null, role: 'GUEST' };
+      //return next(new Error('Autenticazione Socket fallita: Token mancante'));
+      console.log("[Socket Auth] Utente GUEST connesso.");
+      return next();
     }
 
     try {
@@ -171,5 +174,20 @@ export const setupSockets = async (io: Server) => {
       }
       console.log(`🔴 Client disconnesso: ${socket.id}`);
     });
+
+    //socket.on('join-private-dashboard', () => {
+    //  socket.join('private-dashboard');
+    //});
+
+    socket.on('join-public-dashboard', () => {
+      socket.join('global-dashboard');
+      console.log(`[Real-time] Utente ${socket.id} monitora la dashboard pubblica`);
+    });
+
+    socket.on('join-shared-dashboard', () => {
+      socket.join('shared-dashboard');
+    });
+
   });
+
 };

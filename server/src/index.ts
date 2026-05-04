@@ -25,6 +25,8 @@ const io = new Server(httpServer, {
     }
 });
 
+app.set('io', io);
+
 setupSockets(io);
 
 //Letsgonski Letsgo

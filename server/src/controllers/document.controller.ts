@@ -3,11 +3,22 @@ import { DocumentService } from '../services/document.service.js';
 import { type AuthRequest } from '../middlewares/auth.middleware.js';
 import { UserModel } from '../models/User.js';
 
+
 export const createDoc = async (req: AuthRequest, res: Response) => {
     try {
         const { title, folderId, visibility } = req.body;
         const ownerId = req.user!.id;
         const doc = await DocumentService.createDocument(title || 'Documento Senza Titolo', ownerId, folderId, visibility);
+        
+        const io = req.app.get('io');
+        if (io) {
+            if (visibility === 'public') {
+                io.to('global-dashboard').emit('global-document-created', doc);
+            } else {
+                // TODO
+            }
+        }
+
         res.status(201).json(doc);
     } catch (error) {
         res.status(500).json({ error: 'Errore creazione documento' });
@@ -66,7 +77,7 @@ export const deleteDocument = async (req: AuthRequest, res: Response) => {
             return;
         }
         const docOk = await DocumentService.deleteDocument(documentId)
-        console.log('Documento eliminato')
+        //console.log('Documento eliminato')
         res.status(200).json(docOk)
     } catch (error) {
         res.status(500).json({ error: 'Errore eliminazione documento' })
@@ -77,7 +88,7 @@ export const renameDocument = async (req: AuthRequest, res: Response) => {
     try {
         const { id, newTitle } = req.body;
         const userId = req.user!.id;
-        console.log(newTitle)
+        //console.log(newTitle)
 
         const doc = await DocumentService.getDocumentById(id);
         if (!doc) {
@@ -91,7 +102,7 @@ export const renameDocument = async (req: AuthRequest, res: Response) => {
         }
 
         const updatedDoc = await DocumentService.renameDocument(id, newTitle);
-        console.log(updatedDoc)
+        //console.log(updatedDoc)
         res.status(200).json(updatedDoc);
     } catch (error) {
         console.error("Errore rinomina documento:", error);
@@ -103,7 +114,7 @@ export const getSharedDocs = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user!.id;
         const docs = await DocumentService.getSharedDocuments(userId);
-        console.log(docs)
+        //console.log(docs)
         res.json(docs);
     } catch (error) {
         res.status(500).json({ error: 'Errore recupero documenti condivisi' });
