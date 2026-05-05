@@ -7,10 +7,11 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
     try {
         const users = await AdminService.getAllUsersBasicInfo();
 
-        const usersWithPresencePromises = users.map(async (user) => {
-            const userIdStr = user._id.toString();
-            const isOnline = await PresenceManager.isUserOnline(userIdStr);
+        const userIds = users.map(user => user._id.toString());
+        const onlineUsersSet = await PresenceManager.getOnlineUsers(userIds);
 
+        const usersWithPresence = users.map((user) => {
+            const userIdStr = user._id.toString();
             return {
                 id: userIdStr,
                 firstName: user.firstName,
@@ -18,11 +19,9 @@ export const getAllUsers = async (req: Request, res: Response): Promise<void> =>
                 email: user.email,
                 role: user.role,
                 lastSeen: user.lastSeen,
-                isOnline: isOnline
+                isOnline: onlineUsersSet.has(userIdStr)
             };
         });
-
-        const usersWithPresence = await Promise.all(usersWithPresencePromises);
 
         res.status(200).json(usersWithPresence);
     } catch (error) {
