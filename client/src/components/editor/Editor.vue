@@ -16,8 +16,6 @@ import { useCollaboration } from '../../composables/useCollaboration';
 import BubbleMenu from '@tiptap/extension-bubble-menu';
 import AIBubbleMenu from './BubbleMenu.vue';
 
-const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
-
 const props = defineProps<{
   documentId: string;
   ownerId: string;
@@ -28,7 +26,6 @@ const authStore = useAuthStore();
 
 const { ydoc, provider, activeUsers, getRandomColor } = useCollaboration(
   props.documentId, 
-  wsUrl, 
   authStore.token || undefined
 );
 

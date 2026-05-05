@@ -1,26 +1,24 @@
 import { ref, onBeforeUnmount } from 'vue';
 import * as Y from 'yjs';
-import { io } from 'socket.io-client';
+import { socketService } from '../services/socket.service';
 import { Awareness } from 'y-protocols/awareness';
 import * as awarenessProtocol from 'y-protocols/awareness';
 
-export function useCollaboration(documentId: string, wsUrl: string, token?: string) {
+export function useCollaboration(documentId: string, token?: string) {
   const ydoc = new Y.Doc();
   
-  const socket = io(wsUrl, {
-    query: {
-      documentId
-    },
-    auth: {
-      token
-    }
-  });
+  if (!socketService.getSocket()) {
+    socketService.connect(token || null);
+  }
+  
+  const socket = socketService.getSocket()!;
 
   socket.emit('join-document', documentId);
 
-  socket.on('sync-document', (fullState: ArrayBuffer) => {
+  const handleSyncDocument = (fullState: ArrayBuffer) => {
     Y.applyUpdate(ydoc, new Uint8Array(fullState));
-  });
+  };
+  socket.on('sync-document', handleSyncDocument);
 
   ydoc.on('update', (update: Uint8Array) => {
     socket.emit('crdt-update', { 
@@ -29,17 +27,19 @@ export function useCollaboration(documentId: string, wsUrl: string, token?: stri
     });
   });
 
-  socket.on('crdt-update', (update: ArrayBuffer) => {
+  const handleCrdtUpdate = (update: ArrayBuffer) => {
     Y.applyUpdate(ydoc, new Uint8Array(update));
-  });
+  };
+  socket.on('crdt-update', handleCrdtUpdate);
 
   const getRandomColor = () => '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
   const awareness = new Awareness(ydoc);
   const provider = { awareness };
 
-  socket.on('awareness-update', (update: ArrayBuffer) => {
+  const handleAwarenessUpdate = (update: ArrayBuffer) => {
     awarenessProtocol.applyAwarenessUpdate(awareness, new Uint8Array(update), socket);
-  });
+  };
+  socket.on('awareness-update', handleAwarenessUpdate);
 
   const activeUsers = ref<string[]>([]);
 
@@ -67,7 +67,9 @@ export function useCollaboration(documentId: string, wsUrl: string, token?: stri
   onBeforeUnmount(() => {
     if (socket) {
       socket.emit('leave-document', documentId);
-      socket.disconnect();
+      socket.off('sync-document', handleSyncDocument);
+      socket.off('crdt-update', handleCrdtUpdate);
+      socket.off('awareness-update', handleAwarenessUpdate);
     }
     if (ydoc) {
       ydoc.destroy();

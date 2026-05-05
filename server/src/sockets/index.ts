@@ -99,6 +99,7 @@ export const setupSockets = async (io: Server) => {
     });
 
     socket.on('join-document', async (documentId: string) => {
+      if (socket.rooms.has(documentId)) return;
       socket.join(documentId);
 
       if (!activeDocuments.has(documentId)) {
@@ -160,6 +161,7 @@ export const setupSockets = async (io: Server) => {
     });
 
     socket.on('leave-document', async (documentId: string) => {
+      if (!socket.rooms.has(documentId)) return;
       socket.leave(documentId);
       await handleClientLeave(documentId);
     });
